@@ -1,0 +1,125 @@
+/* General Table Styling */
+.wp-list-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.wp-list-table th, .wp-list-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.wp-list-table th {
+    background-color: #f1f1f1;
+    font-weight: bold;
+}
+
+/* Row Hover Effect */
+.wp-list-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Status Styles */
+.status-success {
+    color: green !important;
+    font-weight: bold;
+}
+
+.status-failed {
+    color: red !important;
+    font-weight: bold;
+}
+
+/* Action Button Styling */
+.wp-list-table .button-secondary {
+    background-color: #0073aa;
+    border-color: #0073aa;
+    color: #ffffff;
+}
+
+.wp-list-table .button-secondary:hover {
+    background-color: #005a87;
+    border-color: #004c70;
+    color: #ffffff;
+}
+
+/* Pagination Styling */
+.pagination {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.pagination ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: inline-block;
+}
+
+.pagination ul li {
+    display: inline;
+    margin: 0 5px;
+}
+
+.pagination ul li a,
+.pagination ul li span {
+    color: #0073aa;
+    padding: 5px 10px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background-color: #f1f1f1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.pagination ul li a:hover {
+    background-color: #0073aa;
+    color: #fff;
+}
+
+.pagination ul li span.current {
+    background-color: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
+}
+
+/* Modal Styling */
+.wp-gitdeploy-modal {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    overflow: auto;
+    z-index: 9999;
+}
+
+.wp-gitdeploy-modal-content {
+    background: #fff;
+    margin: 5% auto;
+    padding: 20px;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 900px;
+}
+
+.wp-gitdeploy-close {
+    color: #000;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.wp-gitdeploy-close:hover {
+    color: #ff0000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.wp-gitdeploy-details-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}

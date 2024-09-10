@@ -1,0 +1,61 @@
+.wp-gitdeploy-setup-steps {
+    margin-top: 20px;
+}
+.step {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+.step h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+.step p {
+    margin-bottom: 10px;
+}
+.step button {
+    margin-top: 10px;
+}
+.setup-complete {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid #d4edda;
+    background-color: #d4edda;
+    color: #155724;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.setup-complete .dashicons-yes {
+    font-size: 24px;
+    margin-right: 10px;
+}
+#files-list {
+    list-style: none;
+    padding: 0;
+}
+#files-list li {
+    font-size: 16px;
+    margin: 5px 0;
+    display: flex;
+    align-items: center;
+}
+.tick {
+    color: green;
+    margin-right: 10px;
+}
+.cross {
+    color: red;
+    margin-right: 10px;
+}
+#loading-indicator {
+    font-size: 16px;
+    color: #666;
+    margin-top: 10px;
+}
+#download-link {
+    margin-top: 10px;
+}
