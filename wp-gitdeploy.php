@@ -24,6 +24,10 @@ define( 'WP_GITDEPLOY_WORDPRESS_ROOT', wp_normalize_path( ABSPATH ) );
 define( 'WP_GITDEPLOY_UPLOAD_DIR', wp_normalize_path( wp_upload_dir()[ 'basedir' ] ) . '/wp-gitdeploy-zips/' );
 // Outputs as URL: eg: https://example.com/wp-content/uploads/
 define( 'WP_GITDEPLOY_UPLOAD_URL', wp_normalize_path( wp_upload_dir()[ 'baseurl' ] ) . '/wp-gitdeploy-zips/' );
+// Outputs as Path: eg: www/public_html/wp-content/uploads/
+define( 'WP_GITDEPLOY_RESYNC_DIR', wp_normalize_path( wp_upload_dir()[ 'basedir' ] ) . '/wp-gitdeploy-resync/' );
+// Outputs as Path: eg: https://example.com/wp-content/uploads/
+define( 'WP_GITDEPLOY_RESYNC_URL', wp_normalize_path( wp_upload_dir()[ 'baseurl' ] ) . '/wp-gitdeploy-resync/' );
 
 /** Composer autoload */
 if ( ! class_exists( 'WP_Async_Request' ) ) {
@@ -35,6 +39,7 @@ require_once( ABSPATH . '/wp-includes/pluggable.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/classes/background-async-pull/class-bg-async-pull.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/classes/class-deploy-to-wp.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/classes/deployments/class-deployments.php' );
+require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/classes/resync/class-resync.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/menus/setup-admin-menu.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/functions.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/hooks.php' );
@@ -60,6 +65,8 @@ function wp_gitdeploy_required_tables() {
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         deployment_time DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
         status VARCHAR(20) NOT NULL,
+        type TEXT NOT NULL,
+        reason TEXT NOT NULL,
         files_changed TEXT NOT NULL,
         PRIMARY KEY (id)
     ) $charset_collate;";

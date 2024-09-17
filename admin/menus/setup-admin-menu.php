@@ -36,7 +36,17 @@ function wp_gitdeploy_add_admin_menu() {
         'wp_gitdeploy_settings_page'
     );
 
-    // Settings Sub menu
+    // Resync Sub menu
+    add_submenu_page(
+        'wp_gitdeploy_setup',
+        'ReSync',
+        'ReSync',
+        'manage_options',
+        'wp_gitdeploy_resync',
+        'wp_gitdeploy_resync_page'
+    );
+    
+    // Deployments Sub menu
     add_submenu_page(
         'wp_gitdeploy_setup',
         'Deployments',
@@ -57,4 +67,8 @@ function wp_gitdeploy_settings_page() {
 
 function wp_gitdeploy_deployments_page() {
     include_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/screens/deployments.php' );
+}
+
+function wp_gitdeploy_resync_page() {
+    include_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/screens/resync.php' );
 }

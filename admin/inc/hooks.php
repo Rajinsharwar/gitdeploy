@@ -10,3 +10,6 @@ add_action( 'wp_gitdeploy_delete_zip_cron', 'wp_gitdeploy_delete_zips' );
 
 // Hook for Deployments Ajax
 add_action('wp_ajax_wp_gitdeploy_get_deployment_details', 'wp_gitdeploy_get_deployment_details');
+
+// Hook to handle AJAX request
+add_action('wp_ajax_wp_gitdeploy_resync', 'wp_gitdeploy_resync_action');

@@ -173,7 +173,19 @@ $finish_setup_disabled = ! (
         <div class="wp-gitdeploy-setup-steps">
             <div class="step">
                 <h2><?php _e('Step 3: Finish Setup', 'wp-gitdeploy'); ?></h2>
-                <p><?php _e('After entering your GitHub credentials, click \'Finish Setup\' to complete the setup.', 'wp-gitdeploy'); ?></p>
+                <p><?php _e('After entering your GitHub credentials, click \'Finish Setup\' to complete the setup. Please ensure the necessary permissions are set for GitHub Actions to work correctly.', 'wp-gitdeploy'); ?></p>
+                
+                <h3><?php _e('Important: Configure Workflow Permissions in GitHub', 'wp-gitdeploy'); ?></h3>
+                <p><?php _e('To ensure the GitHub Actions workflows can operate correctly, you need to set the workflow permissions in your GitHub repository. Follow these steps:', 'wp-gitdeploy'); ?></p>
+                <ol>
+                    <li><?php _e('Go to your GitHub repository on the GitHub website.', 'wp-gitdeploy'); ?></li>
+                    <li><?php _e('Click on the "Settings" tab located at the top of your repository page.', 'wp-gitdeploy'); ?></li>
+                    <li><?php _e('In the left sidebar, click on "Actions" under the "Code and automation" section.', 'wp-gitdeploy'); ?></li>
+                    <li><?php _e('In the "Actions" > "General" settings page, find the "Workflow permissions" section.', 'wp-gitdeploy'); ?></li>
+                    <li><?php _e('Select "Read and write permissions" to allow workflows to modify the repository.', 'wp-gitdeploy'); ?></li>
+                    <li><?php _e('Click "Save" to apply the changes.', 'wp-gitdeploy'); ?></li>
+                </ol>
+                <p><?php _e('Once the permissions are set, you can return to this page and click \'Finish Setup\' to complete the configuration.', 'wp-gitdeploy'); ?></p>
                 <button type="submit" name="finish_setup" class="button button-primary" <?php echo $finish_setup_disabled ? 'disabled' : ''; ?>><?php _e('Finish Setup', 'wp-gitdeploy'); ?></button>
             </div>
         </div>

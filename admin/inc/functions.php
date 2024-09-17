@@ -54,7 +54,7 @@ function wp_gitdeploy_generate_zip() {
 }
 
 /**
- * FFunction to return the names of the folders and files to be included in the ZIP
+ * Function to return the names of the folders and files to be included in the ZIP
  * 
  * @since 1.0
  */
@@ -238,16 +238,77 @@ function wp_gitdeploy_get_deployment_details() {
 
     if ($deployment) {
         $files_changed = json_decode($deployment->files_changed, true);
+        $reason = esc_html($deployment->reason);
         $details = '<p><strong>Time:</strong> ' . esc_html($deployment->deployment_time) . '</p>';
         $details .= '<p><strong>Status:</strong> ' . esc_html($deployment->status) . '</p>';
-        $details .= '<p><strong>Files Changed:</strong></p><ul>';
-        foreach ($files_changed as $file) {
-            $details .= '<li>' . esc_html($file) . '</li>';
+        if ( '' !== $reason ) {
+            $details .= '<p><strong>Details: </strong> ' . wp_kses( $deployment->reason, array( 'br' => array() ) ) . '</p>';
+        }
+
+        if ( $files_changed ) {
+            $details .= '<p><strong>Files Changed:</strong></p><ul>';
+            foreach ($files_changed as $file) {
+                $details .= '<li>' . esc_html($file) . '</li>';
+            }
         }
         $details .= '</ul>';
 
         wp_send_json_success($details);
     } else {
         wp_send_json_error();
+    }
+}
+
+/**
+ * Ajax handler for Resync Action
+ */
+function wp_gitdeploy_resync_action() {
+    // Check nonce for security
+    check_ajax_referer('wp_gitdeploy_resync_nonce', 'nonce');
+
+    $items_to_include = wp_gitdeploy_allowed_items();
+
+    $zip = new ZipArchive();
+    $zip_file = WP_GITDEPLOY_RESYNC_DIR . 'wp-content-' . time() . '.zip';
+    $zip_file_url = WP_GITDEPLOY_RESYNC_URL . 'wp-content-' . time() . '.zip';
+
+    if ( ! is_dir( WP_GITDEPLOY_RESYNC_DIR ) ) {
+        wp_mkdir_p( WP_GITDEPLOY_RESYNC_DIR );
+    }
+
+    if ($zip->open($zip_file, ZipArchive::CREATE) === TRUE) {
+        $wp_content_dir = WP_CONTENT_DIR;
+
+        foreach ( $items_to_include as $item ) {
+            $full_path = $wp_content_dir . '/' . $item;
+
+            if (is_dir($full_path)) {
+                // Add the folder and its contents to the ZIP file
+                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($full_path), RecursiveIteratorIterator::LEAVES_ONLY);
+
+                foreach ($files as $file) {
+                    if (!$file->isDir()) {
+                        $file_path = $file->getRealPath();
+                        $relative_path = substr($file_path, strlen($wp_content_dir) + 1);
+                        $zip->addFile($file_path, $relative_path);
+                    }
+                }
+            } elseif (is_file($full_path)) {
+                // Add the individual file to the ZIP file
+                $relative_path = substr($full_path, strlen($wp_content_dir) + 1);
+                $zip->addFile($full_path, $relative_path);
+            }
+        }
+
+        $zip->close();
+    }
+
+    //Instantiate the class and run the resync
+    $resync = new WP_GitDeploy_Resync( $zip_file_url, $zip_file );
+    if ( true === $result = $resync->sync() ) {
+        // Return success response
+        wp_send_json_success('Resync Complete');   
+    } else {
+        wp_send_json_error('Failed to Resync');
     }
 }

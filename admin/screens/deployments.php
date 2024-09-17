@@ -28,6 +28,7 @@ $total_pages = ceil($total_count / $limit);
         <thead>
             <tr>
                 <th><?php _e('Deployment Time', 'wp-gitdeploy'); ?></th>
+                <th><?php _e('Type', 'wp-gitdeploy'); ?></th>
                 <th><?php _e('Status', 'wp-gitdeploy'); ?></th>
                 <th><?php _e('Actions', 'wp-gitdeploy'); ?></th>
             </tr>
@@ -36,6 +37,7 @@ $total_pages = ceil($total_count / $limit);
             <?php foreach ($deployments as $deployment): ?>
                 <tr>
                     <td><?php echo esc_html($deployment->deployment_time); ?></td>
+                    <td><b><?php echo esc_html($deployment->type); ?></b></td>
                     <td class="<?php echo esc_attr($deployment->status === 'Success' ? 'status-success' : 'status-failed'); ?>">
                         <?php echo esc_html($deployment->status); ?>
                     </td>

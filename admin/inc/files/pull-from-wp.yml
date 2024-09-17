@@ -1,0 +1,51 @@
+name: Pull WordPress Content
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_url:
+        description: 'The URL to download the ZIP file from'
+        required: true
+        default: 'https://example.com/wp-content.zip'
+      file_name:
+        description: 'The name of the ZIP file'
+        required: true
+        default: 'wp-content.zip'
+
+jobs:
+  sync_wp_to_repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the current state of the repository with Git LFS
+      - name: Checkout repository with LFS
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+
+      # Step 2: Download the ZIP file from the provided URL
+      - name: Download ZIP file
+        run: |
+          curl -O ${{ github.event.inputs.file_url }}
+
+      # Step 3: Extract the downloaded ZIP file, overwrite without prompts
+      - name: Extract ZIP file
+        run: |
+          7z x ${{ github.event.inputs.file_name }} -y
+
+      # Step 4: Add files to Git LFS, commit and push changes
+      - name: Commit changes with LFS
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git lfs track "${{ github.event.inputs.file_name }}"
+          git add .
+          if git diff-index --quiet HEAD; then
+            echo "No changes to commit."
+          else
+            git config --global user.name "GitHub Action"
+            git config --global user.email "action@github.com"
+            git commit -m "Update from WordPress ${GITHUB_EVENT_INPUTS_FILE_NAME} [skip ci]"
+            git push
+            git lfs push --all origin main  # Push LFS objects explicitly
+          fi

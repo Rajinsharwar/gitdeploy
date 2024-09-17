@@ -29,7 +29,12 @@ function wp_gitdeploy_permission_callback(WP_REST_Request $request) {
 function wp_gitdeploy_handle_webhook(WP_REST_Request $request) {
     $payload = $request->get_json_params();
 
-    // Process the payload as needed
+    // No need to Push when Pull event is runned from GH actions.
+    if ( isset( $payload[ 'head_commit' ][ 'message' ] ) && str_contains( $payload[ 'head_commit' ][ 'message' ], '[skip ci]' ) ) {
+        return new WP_REST_Response('Webhook not processed', 200);
+    }
+
+    // Process
     $process = new WP_GitDeploy_Pull_from_GitHub($payload);
 
     return new WP_REST_Response('Webhook processed successfully', 200);
