@@ -29,170 +29,275 @@ class WP_GitDeploy_Async extends WP_Async_Request {
     
         $this->status = 'Success'; // Default status is success.
         $this->reason = '';
-    
-        // Fetch the entire repository recursively starting from the root
-        $this->process_directory( $username, $repo, $branch, '', $changed_files, $token, $this->status );
-    
+
+        // Define the directory to store the downloaded ZIP file and extracted contents
+        $pull_dir = WP_GITDEPLOY_PULL_DIR;
+        if ( ! file_exists( $pull_dir ) ) {
+            mkdir( $pull_dir, 0755, true );
+        }
+
+        // Download the ZIP archive from GitHub
+        $zip_file = $this->download_repo_zip( $username, $repo, $branch, $token, $pull_dir );
+
+        if ( false !== $zip_file ) {            
+            // Extract the ZIP archive
+            $dynamic_pull_dir = $this->extract_zip( $zip_file, $pull_dir );
+
+            if ( $dynamic_pull_dir ) {
+                // Replace the changed files
+                $this->replace_changed_files( $dynamic_pull_dir, $changed_files );
+
+                // Clean up the downloaded ZIP and extracted files
+                $this->cleanup_pull_dir( $pull_dir );
+            }   
+        } else {
+            $this->status = 'Failed';
+            $this->reason = __( 'Failed to download the GitHub repository ZIP file.', 'wp-gitdeploy' );
+        }
+
         $deployment_log = new \WP_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, json_encode( $changed_files ) );
     }
 
     /**
-     * Method to Process the Content Directory
+     * Download the repository ZIP archive from GitHub.
+     *
+     * @param string $username GitHub username.
+     * @param string $repo GitHub repository name.
+     * @param string $branch Branch name.
+     * @param string $token GitHub personal access token.
+     * @param string $pull_dir The directory to save the downloaded ZIP file.
+     * @return string|false Path to the downloaded ZIP file or false on failure.
      */
-    protected function process_directory( $username, $repo, $branch, $directory, $changed_files, $token, &$status ) {
-        // Fetch the contents of the current directory ('' for the root)
-        $url = "https://api.github.com/repos/$username/$repo/contents/$directory?ref=$branch";
-    
-        $response = wp_remote_get($url, [
+    protected function download_repo_zip( $username, $repo, $branch, $token, $pull_dir ) {
+        // Create the dynamic ZIP file name based on the repo and timestamp
+        $timestamp = time();
+        $zip_file_name = $repo . '-' . $timestamp . '.zip';
+        $zip_file = $pull_dir . $zip_file_name;
+
+        $zip_url = "https://api.github.com/repos/$username/$repo/zipball/$branch";
+
+        $response = wp_remote_get( $zip_url, [
             'headers' => [
-                'Accept' => 'application/vnd.github+json',
                 'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/vnd.github+json',
                 'X-GitHub-Api-Version' => '2022-11-28',
             ],
+            'timeout' => 1000,
+            'stream' => true,
+            'filename' => $zip_file,
         ]);
-    
-        if ( is_wp_error( $response ) ) {
-            $this->status = 'Failed';
-            return;
-        }
 
         $response_code = wp_remote_retrieve_response_code( $response );
-        if ( $response_code === 403 ) {
-            // Check for rate limit exceeded error
-            $response_body = wp_remote_retrieve_body( $response );
-            $response_data = json_decode( $response_body, true );
 
-            $response_header = wp_remote_retrieve_headers( $response );
-            $limit_cap = $response_header[ 'X-RateLimit-Limit' ] ?? 'N/A';
-            $rate_used = $response_header[ 'X-RateLimit-Used' ] ?? 'N/A';
-            $reset_time = $response_header[ 'X-RateLimit-Reset' ] ?? 'N/A';
+        // Check for rate limit exceeded error
+        $response_body = wp_remote_retrieve_body( $response );
+        $response_data = json_decode( $response_body, true );
 
-            if ($reset_time !== 'N/A') {
-                $human_readable_time = gmdate('Y-m-d H:i:s', $reset_time) . ' UTC';
-            } else {
-                $human_readable_time = 'N/A';
-            }
-    
-            if ( isset( $response_data['message'] ) && strpos( $response_data['message'], 'API rate limit exceeded') !== false ) {
-                $this->status = 'Failed';
-                $this->reason = sprintf(
-                    __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'wp-gitdeploy' ),
-                    $limit_cap,
-                    $rate_used,
-                    $human_readable_time
-                );
-                return;
-            }
-        }
-    
-        $body = wp_remote_retrieve_body( $response );
-        $directory_contents = json_decode( $body, true );
-    
-        if ( ! is_array( $directory_contents ) ) {
+        if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
             $this->status = 'Failed';
-            return;
-        }
-    
-        // Extract paths of files and directories in the repo
-        $repo_files = array_map( function ( $item ) {
-            return $item[ 'path' ];
-        }, $directory_contents );
-    
-        // Handle deletion of local files that no longer exist in the repo
-        foreach ( $changed_files as $changed_file ) {
-            if ( strpos( $changed_file, $directory ) === 0 ) {
-                if ( ! in_array( $changed_file, $repo_files ) ) {
-                    $this->delete_file( $changed_file, $this->status );
-                }
-            }
-        }
-    
-        // Process each item in the current directory
-        foreach ( $directory_contents as $item ) {
-            $item_path = $item[ 'path' ];
-    
-            if ( $item[ 'type' ] === 'dir' ) {
-                // Recursively process subdirectories
-                $this->process_directory( $username, $repo, $branch, $item_path, $changed_files, $token, $this->status );
-            } elseif ( $item[ 'type' ] === 'file' ) {
-                // Download and save changed files
-                if ( in_array( $item_path, $changed_files ) ) {
-                    $this->download_and_save_file( $item, $changed_files, $this->status );
-                }
-            }
+            $this->reason = __( 'Unable to get Repository data' );
+            return false;
         }
 
-        // Handle deletion of empty directories
-        $upload_dir = WP_CONTENT_DIR . '/';
-
-        foreach ( $changed_files as $changed_file ) {
-            if ( strpos( $changed_file, $directory ) === 0) {
-                if ( ! in_array( $changed_file, $repo_files ) ) {
-                    $local_file_path = $upload_dir . $changed_file;
-                    $this->delete_empty_directories( dirname( $local_file_path ) );
-                }
-            }
-        }
-    }
-    
-    /**
-     * Method to Download and Save changed files.
-     */
-    protected function download_and_save_file( $file_data, $changed_files, &$status ) {
-        $file_url = $file_data[ 'download_url' ];
-    
-        // Fetch the file content
-        $file_content = wp_remote_get( $file_url );
-    
-        if ( is_wp_error( $file_content ) ) {
-            $this->status = 'Failed';
-            return;
-        }
-    
-        $decoded_content = wp_remote_retrieve_body( $file_content );
-    
-        $upload_dir = WP_CONTENT_DIR . '/';
-        $local_file_path = $upload_dir . $file_data[ 'path' ];
-    
-        // Ensure the directory exists
-        if ( ! file_exists( dirname( $local_file_path ) ) ) {
-            mkdir( dirname( $local_file_path ), 0755, true );
-        }
-    
-        // Write the file content
-        file_put_contents( $local_file_path, $decoded_content );
+        return $zip_file;  // Return the dynamically named ZIP file path
     }
 
     /**
-     * Delete the files that doesn't exist in repo.
-     */
-    protected function delete_file( $file_path, &$status ) {
-        $upload_dir = WP_CONTENT_DIR . '/';
-        $local_file_path = $upload_dir . $file_path;
-    
-        if ( file_exists( $local_file_path ) ) {
-            if ( ! unlink( $local_file_path ) ) {
-                $this->status = 'Failed';
-            }
-        }
-    }
-
-    /**
-     * Helper function to delete empty directories.
+     * Extract the downloaded ZIP archive and move the contents to the desired root folder.
      *
-     * @param string $dir Directory path.
-     * @return void
+     * @param string $zip_file Path to the ZIP file.
+     * @param string $pull_dir Directory where the contents will be extracted.
+     * @return string The extracted folder path.
      */
-    protected function delete_empty_directories( $dir ) {
-        // Check if the directory exists
-        if ( is_dir( $dir ) ) {
-            // Check if the directory is empty
-            $files = scandir( $dir );
-            if ( count( $files ) == 2 ) { // "." and ".." are always present in a directory
-                if ( rmdir( $dir ) ) {
-                    $this->delete_empty_directories( dirname( $dir ) );
+    protected function extract_zip( $zip_file, $pull_dir ) {
+        global $wp_filesystem;
+
+        // Initialize the filesystem, if it's not already initialized
+        if ( ! function_exists( 'WP_Filesystem' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/file.php' );
+        }
+
+        WP_Filesystem();
+
+        // Create the extracted folder name based on the ZIP file name (without the .zip extension)
+        $extract_folder = $pull_dir . basename( $zip_file, '.zip' ) . '/';
+
+        // Unzip the file to the dynamically named folder
+        $extracted_zip_response = unzip_file( $zip_file, $extract_folder );
+
+        if ( is_wp_error( $extracted_zip_response ) ) {
+            $this->status = 'Failed';
+            $this->reason = __( 'Unable to extract Repository data' );
+            return false;
+        }
+
+        // Find the subfolder with the "weird" name (GitHub-specific folder)
+        $subfolders = glob( $extract_folder . '*', GLOB_ONLYDIR );
+
+        if ( ! $subfolders ) {
+            $this->status = 'Failed';
+            $this->reason = __( 'Cannot find pathnames in Repo data.', 'wp-gitdeploy' );
+            return;
+        }
+
+        if ( count( $subfolders ) > 0 ) {
+            // Move contents of the GitHub folder to the main extract folder
+            $github_folder = $subfolders[0]; // This is the GitHub-generated folder
+            $this->move_files_to_root( $github_folder, $extract_folder );
+
+            // Remove the now-empty GitHub folder
+            $this->delete_directory( $github_folder );
+        } else {
+            $this->status = 'Failed';
+            $this->reason = __( 'No Repository data found' );
+            return false;
+        }
+
+        return $extract_folder;  // Return the cleaned-up extracted folder path
+    }
+
+    /**
+     * Move all files from the GitHub-generated folder to the main extracted folder.
+     *
+     * @param string $source_dir The GitHub-generated folder (unpredictable name).
+     * @param string $target_dir The root folder where the contents should be moved.
+     */
+    protected function move_files_to_root( $source_dir, $target_dir ) {
+        $files = scandir( $source_dir );
+
+        if ( ! $files ) {
+            $this->status = 'Failed';
+            $this->reason = __( 'Couldn\'t scan Repo Data after downloading.', 'wp-gitdeploy' );
+            return;
+        }
+
+        foreach ( $files as $file ) {
+            if ( $file != '.' && $file != '..' ) {
+                $rename = rename( $source_dir . '/' . $file, $target_dir . '/' . $file );
+
+                if ( ! $rename ) {
+                    $this->status = 'Failed';
+                    $this->reason = __( 'Couldn\'t rename Repo data after downloading.', 'wp-gitdeploy' );
+                    return;
                 }
             }
         }
+    }
+
+    /**
+     * Replace the changed files in the correct WordPress content directory (plugins, themes, mu-plugins).
+     *
+     * @param string $extract_folder The directory where the ZIP contents are extracted.
+     * @param array $changed_files Array of changed file paths.
+     */
+    protected function replace_changed_files( $extract_folder, $changed_files ) {
+        // Base directory for the wp-content directory
+        $content_dir = WP_CONTENT_DIR . '/';
+
+        // Directories for plugins, themes, and mu-plugins
+        $plugin_dir = $content_dir . 'plugins/';
+        $theme_dir = $content_dir . 'themes/';
+        $mu_plugin_dir = $content_dir . 'mu-plugins/';
+
+        if ( ! $changed_files || count( $changed_files ) < 0 ) {
+            $this->status = 'Failed';
+            $this->reason = __( 'No changed files found.', 'wp-gitdeploy' );
+            return false;
+        }
+
+        foreach ( $changed_files as $changed_file ) {
+            // Determine where the file should go based on its path
+            if ( strpos( $changed_file, 'plugins/' ) === 0 ) {
+                // If it's a plugin file, copy to the plugins directory
+                $src_file = $extract_folder . $changed_file;
+                $dest_file = $plugin_dir . substr( $changed_file, strlen( 'plugins/' ) );
+
+            } elseif ( strpos( $changed_file, 'themes/' ) === 0 ) {
+                // If it's a theme file, copy to the themes directory
+                $src_file = $extract_folder . $changed_file;
+                $dest_file = $theme_dir . substr( $changed_file, strlen( 'themes/' ) );
+
+            } elseif ( strpos( $changed_file, 'mu-plugins/' ) === 0 ) {
+                // If it's an mu-plugin file, copy to the mu-plugins directory
+                $src_file = $extract_folder . $changed_file;
+                $dest_file = $mu_plugin_dir . substr( $changed_file, strlen( 'mu-plugins/' ) );
+
+            } else {
+                // If it doesn't match any known type, continue (you can also log or handle this case if necessary)
+                continue;
+            }
+
+            // Ensure the source file exists in the extracted folder
+            if ( file_exists( $src_file ) ) {
+                // Ensure the destination directory exists
+                if ( ! file_exists( dirname( $dest_file ) ) ) {
+                    $mkdir = mkdir( dirname( $dest_file ), 0755, true );
+
+                    if ( ! $mkdir ) {
+                        $this->status = 'Failed';
+                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'wp-gitdeploy' );
+                        return false;
+                    }
+                }
+
+                // Copy the file from the extracted folder to the correct location
+                $copy = copy( $src_file, $dest_file );
+
+                if ( ! $copy ) {
+                    $this->status = 'Failed';
+                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'wp-gitdeploy' );
+                    return false;
+                }
+            } else {
+                // If the source file does not exist, remove the file from the destination
+                if ( file_exists( $dest_file ) ) {
+                    $unlink = unlink( $dest_file );
+
+                    if ( ! $unlink ) {
+                        $this->status = 'Failed';
+                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'wp-gitdeploy' );
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Cleanup the pull directory by deleting the ZIP and extracted files.
+     *
+     * @param string $pull_dir Directory to clean up.
+     */
+    protected function cleanup_pull_dir( $pull_dir ) {
+        // Delete all files in the directory
+        $files = glob( $pull_dir . '*', GLOB_MARK );
+
+        foreach ( $files as $file ) {
+            if ( is_dir( $file ) ) {
+                $this->delete_directory( $file );
+            } else {
+                unlink( $file );
+            }
+        }
+    }
+
+    /**
+     * Delete a directory and its contents recursively.
+     *
+     * @param string $dir Directory to delete.
+     */
+    protected function delete_directory( $dir ) {
+        $files = array_diff( scandir( $dir ), [ '.', '..' ] );
+
+        foreach ( $files as $file ) {
+            $path = $dir . '/' . $file;
+            if ( is_dir( $path ) ) {
+                $this->delete_directory( $path );
+            } else {
+                unlink( $path );
+            }
+        }
+
+        rmdir( $dir );
     }
 }

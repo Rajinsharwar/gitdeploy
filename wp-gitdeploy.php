@@ -28,6 +28,9 @@ define( 'WP_GITDEPLOY_UPLOAD_URL', wp_normalize_path( wp_upload_dir()[ 'baseurl'
 define( 'WP_GITDEPLOY_RESYNC_DIR', wp_normalize_path( wp_upload_dir()[ 'basedir' ] ) . '/wp-gitdeploy-resync/' );
 // Outputs as Path: eg: https://example.com/wp-content/uploads/
 define( 'WP_GITDEPLOY_RESYNC_URL', wp_normalize_path( wp_upload_dir()[ 'baseurl' ] ) . '/wp-gitdeploy-resync/' );
+// Outputs as Path: eg: www/public_html/wp-content/uploads/
+define( 'WP_GITDEPLOY_PULL_DIR', wp_normalize_path( wp_upload_dir()[ 'basedir' ] ) . '/wp-gitdeploy-pull/' );
+
 
 /** Composer autoload */
 if ( ! class_exists( 'WP_Async_Request' ) ) {
