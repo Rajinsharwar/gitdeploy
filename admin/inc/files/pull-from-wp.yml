@@ -17,28 +17,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the current state of the repository with Git LFS
-      - name: Checkout repository with LFS
+      # Step 1: Checkout the current state of the repository
+      - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          lfs: true
 
-      # Step 2: Download the ZIP file from the provided URL
+      # Step 2: Remove the existing content (plugins, themes, mu-plugins) from the repository
+      - name: Remove existing wp-content directories
+        run: |
+          rm -rf plugins
+          rm -rf themes
+          rm -rf mu-plugins
+
+      # Step 3: Download the ZIP file from the provided URL
       - name: Download ZIP file
         run: |
           curl -O ${{ github.event.inputs.file_url }}
 
-      # Step 3: Extract the downloaded ZIP file, overwrite without prompts
+      # Step 5: Extract the downloaded ZIP file, overwrite without prompts
       - name: Extract ZIP file
         run: |
           7z x ${{ github.event.inputs.file_name }} -y
 
-      # Step 4: Add files to Git LFS, commit and push changes
-      - name: Commit changes with LFS
+      # Step 6: Remove the ZIP file after extraction
+      - name: Remove ZIP file
+        run: |
+          rm -f ${{ github.event.inputs.file_name }}
+
+      # Step 7: Commit and push the extracted files, including removals
+      - name: Commit changes
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git lfs track "${{ github.event.inputs.file_name }}"
           git add .
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
@@ -47,5 +56,17 @@ jobs:
             git config --global user.email "action@github.com"
             git commit -m "Update from WordPress ${GITHUB_EVENT_INPUTS_FILE_NAME} [skip ci]"
             git push
-            git lfs push --all origin main  # Push LFS objects explicitly
           fi
+          
+      # Step 4: Extract site URL from the file_url and send API request to WordPress
+      - name: Notify WordPress site via API
+        run: |
+          # Extract the base domain from the file_url (e.g., https://example.com/wp-content.zip -> https://example.com)
+          site_url=$(echo "${{ github.event.inputs.file_url }}" | sed -E 's|(https?://[^/]+).*|\1|')
+
+          # Send GET request to the WordPress REST API endpoint
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"file_name": "${{ github.event.inputs.file_name }}", "action_id": "${{ github.run_id }}"}' \
+            ${site_url}/wp-json/wp_gitdeploy/v1/push-completed
+

@@ -407,3 +407,91 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
         }
     }
 }
+
+/**
+ * Function to create and update the workflow file after the setup is done.
+ */
+function wp_gitdeploy_process_workflow_file() {
+    $creds = get_option( 'wp_gitdeploy_creds', array() );
+
+    $username = $creds['wp_gitdeploy_username'] ?? '';
+    $gh_token = $creds['wp_gitdeploy_token'] ?? '';
+    $repo_name = $creds['wp_gitdeploy_repo'] ?? '';
+    $branch = $creds['wp_gitdeploy_repo_branch'] ?? 'main';
+
+    // Ensure credentials are set
+    if ( empty( $username ) || empty( $gh_token ) || empty( $repo_name ) ) {
+        return 'missing_creds';
+    }
+
+    // Path to the template file and destination workflow file
+    $template_file = WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/files/pull-from-wp.yml';
+    $workflow_file = '.github/workflows/pull-from-wp.yml';
+
+    // Check if the template file exists
+    if ( ! file_exists( $template_file ) ) {
+        return 'file_not_found';
+    }
+
+    // Read the contents of the template file
+    $file_contents = file_get_contents( $template_file );
+    if ( $file_contents === false ) {
+        return 'file_read_error';
+    }
+
+    // Setup the GitHub API endpoint and headers
+    $api_url = "https://api.github.com/repos/$username/$repo_name/contents/$workflow_file";
+    $headers = [
+        'Authorization' => 'Bearer ' . $gh_token,
+        "Accept: application/vnd.github.v3+json"
+    ];
+
+    // Check if the file already exists in the repository
+    $response = wp_remote_get( $api_url, [ 'headers' => $headers ] );
+    $existing_sha = '';
+
+    if ( is_wp_error( $response ) ) {
+        return 'api_request_failed';
+    }
+
+    if ( wp_remote_retrieve_response_code( $response ) === 403 || wp_remote_retrieve_response_code( $response ) === 429 ) {
+        return 'api_rate_limit_exceeded';
+    }
+
+    // If the file exists, get its SHA to update it
+    if ( wp_remote_retrieve_response_code( $response ) === 200 ) {
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+        $existing_sha = $body['sha'] ?? '';
+    }
+
+    // Prepare the payload for creating/updating the file
+    $data = [
+        'message'   => 'Add or update workflow file [skip-ci]',
+        'content'   => base64_encode( $file_contents ),
+        'branch'    => $branch,
+    ];
+
+    if ( ! empty( $existing_sha ) ) {
+        $data['sha'] = $existing_sha;
+    }
+
+    $response = wp_remote_request( $api_url, [
+        'method'  => 'PUT',
+        'headers' => $headers,
+        'body'    => json_encode( $data ),
+    ]);
+
+    if ( is_wp_error( $response ) ) {
+        return 'api_request_failed_2';
+    }
+
+    if ( wp_remote_retrieve_response_code( $response ) === 403 || wp_remote_retrieve_response_code( $response ) === 429 ) {
+        return 'api_rate_limit_exceeded';
+    }
+
+    if ( wp_remote_retrieve_response_code( $response ) !== 201 && wp_remote_retrieve_response_code( $response ) !== 200 ) {
+        return 'api_request_failed_3';
+    }
+
+    return true;
+}

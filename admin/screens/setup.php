@@ -48,11 +48,30 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
 
         if ( $finish_setup_disabled || 1 == $settings_have_errors ) {
             update_option('wp_gitdeploy_setup_complete', 0);
-            $setup_error = '<div class="error"><p>Please enter correct credentials in Step 2, and Save Settings first!</p></div>';
+            $setup_error = '<div class="error"><p>' . __( "Please enter correct credentials in Step 1, and Save Settings first!", "wp-gitdeploy" ) . '</p></div>';
             echo $setup_error;
         } else {
-            update_option('wp_gitdeploy_setup_complete', 1);
-            echo '<div class="updated"><p>' . __('Setup has been completed! Thank you!', 'wp-gitdeploy') . '</p></div>';
+            $workflow_file_setup = wp_gitdeploy_process_workflow_file();
+
+            if ( true === wp_gitdeploy_process_workflow_file() ) {
+                // Successfully created/updated workflow file.
+                update_option('wp_gitdeploy_setup_complete', 1);
+                echo '<div class="updated"><p>' . __('Setup has been completed! Thank you!', 'wp-gitdeploy') . '</p></div>';
+            } elseif ( 'missing_creds' === $workflow_file_setup ) {
+                echo '<div class="error"><p>' . __( 'Please enter correct credentials in Step 1, and Save Settings first!', 'wp-gitdeploy' ) . '</p></div>';
+            } elseif ( 'file_not_found' === $workflow_file_setup ) {
+                echo '<div class="error"><p>' . __( 'The workflow template file does not exist. Kindly delete and reinstall the plugin', 'wp-gitdeploy') . '</p></div>';
+            } elseif ( 'file_read_error' === $workflow_file_setup ) {
+                echo '<div class="error"><p>' . __( 'Failed to read the workflow template file', 'wp-gitdeploy') . '</p></div>';
+            } elseif ( 'api_request_failed' === $workflow_file_setup ) {
+                echo '<div class="error"><p>' . __( 'Failed to communicate with GitHub API', 'wp-gitdeploy') . '</p></div>';
+            } elseif ( 'api_request_failed_2' === $workflow_file_setup ) {
+                echo '<div class="error"><p>' . __( 'Failed to communicate with GitHub API to update the workflow file', 'wp-gitdeploy') . '</p></div>';
+            } elseif ( 'api_request_failed_3' === $workflow_file_setup ) {
+                echo '<div class="error"><p>' . __( 'Connection with GitHub API caused an unexpected error.', 'wp-gitdeploy') . '</p></div>';
+            } elseif ( 'api_rate_limit_exceeded' === $workflow_file_setup ) {
+                echo '<div class="error"><p>' . __( 'GitHub API rate of your account has exceeded it\'s limit, kindly wait one hour for the rate limit to reset.', 'wp-gitdeploy') . '</p></div>';
+            }
         }
     } else {
         echo '<div class="error"><p>Nonce verification failed. Settings not saved.</p></div>';
@@ -83,7 +102,7 @@ $finish_setup_disabled = ! (
     <?php endif; ?>
         
         <div class="wp-gitdeploy-setup-steps">
-        <div class="step">
+        <!-- <div class="step">
             <h2><?php _e('Step 1: Download the ZIP of the Content Folder.', 'wp-gitdeploy'); ?></h2>
             <p><?php _e('Click the button below to generate a ZIP file of your wp-content folder. The ZIP will include the following files and directories:', 'wp-gitdeploy'); ?></p>
             
@@ -100,14 +119,14 @@ $finish_setup_disabled = ! (
             <button id="generate-zip-btn" class="button button-primary"><?php _e('Generate', 'wp-gitdeploy'); ?></button>
             <div id="loading-indicator" style="display:none;"><?php _e('Generating... Please wait.', 'wp-gitdeploy'); ?></div>
             <div id="download-link" style="display:none;"></div>
-        </div>
+        </div> -->
 
         <form method="post" action="">
         <!-- Nonce for settings form -->
         <?php wp_nonce_field('wp_gitdeploy_save_settings', 'wp_gitdeploy_save_settings_nonce'); ?>
 
             <div class="step">
-                <h2><?php _e('Step 2: Enter GitHub Credentials', 'wp-gitdeploy'); ?></h2>
+                <h2><?php _e('Step 1: Enter GitHub Credentials', 'wp-gitdeploy'); ?></h2>
                 <table class="form-table">
                     <tr>
                         <th scope="row">
@@ -172,7 +191,7 @@ $finish_setup_disabled = ! (
         <?php wp_nonce_field('wp_gitdeploy_finish_setup', 'wp_gitdeploy_finish_setup_nonce'); ?>
         <div class="wp-gitdeploy-setup-steps">
             <div class="step">
-                <h2><?php _e('Step 3: Finish Setup', 'wp-gitdeploy'); ?></h2>
+                <h2><?php _e('Step 2: Finish Setup', 'wp-gitdeploy'); ?></h2>
                 <p><?php _e('After entering your GitHub credentials, click \'Finish Setup\' to complete the setup. Please ensure the necessary permissions are set for GitHub Actions to work correctly.', 'wp-gitdeploy'); ?></p>
                 
                 <h3><?php _e('Important: Configure Workflow Permissions in GitHub', 'wp-gitdeploy'); ?></h3>
