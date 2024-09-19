@@ -46,7 +46,8 @@ require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/classes/resync/class-resync.php'
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/menus/setup-admin-menu.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/functions.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/hooks.php' );
-require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/deploy/endpoint.php' );
+require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/endpoints/github-to-wp-endpoint.php' );
+require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/endpoints/wp-to-github-endpoint.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/assets/assets.php' );
 
 /**

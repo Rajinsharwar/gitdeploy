@@ -312,3 +312,98 @@ function wp_gitdeploy_resync_action() {
         wp_send_json_error('Failed to Resync');
     }
 }
+
+/**
+ * Check if a GitHub Actions workflow run is currently running.
+ *
+ * @param string $token GitHub personal access token.
+ * @param string $owner Repository owner.
+ * @param string $repo Repository name.
+ * @param int $run_id GitHub Actions run ID.
+ * @return bool True if the workflow run is currently running, false otherwise.
+ */
+function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
+    $creds = get_option( 'wp_gitdeploy_creds', array() );
+    $token = $creds['wp_gitdeploy_token'] ?? '';
+    $repo = $creds['wp_gitdeploy_repo'] ?? '';
+    $username = $creds['wp_gitdeploy_username'] ?? '';
+    $branch = $creds['wp_gitdeploy_repo_branch'] ?? 'main';
+
+    $api_url = "https://api.github.com/repos/$username/$repo/actions/runs/$run_id";
+
+    $response = wp_remote_get( $api_url, [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/vnd.github.v3+json'
+        ]
+    ]);
+
+    $response_code = wp_remote_retrieve_response_code( $response );
+    // Check for rate limit exceeded error
+    $response_body = wp_remote_retrieve_body( $response );
+    $response_data = json_decode( $response_body, true );
+    $response_header = wp_remote_retrieve_headers( $response );
+    $limit_cap = $response_header[ 'X-RateLimit-Limit' ] ?? 'N/A';
+    $rate_used = $response_header[ 'X-RateLimit-Used' ] ?? 'N/A';
+    $reset_time = $response_header[ 'X-RateLimit-Reset' ] ?? 'N/A';
+
+    if ($reset_time !== 'N/A') {
+        $human_readable_time = gmdate('Y-m-d H:i:s', $reset_time) . ' UTC';
+    } else {
+        $human_readable_time = 'N/A';
+    }
+
+    // check for api rate limit.
+    if ( $response_code === 403 ) {
+        if ( isset( $response_data['message'] ) && strpos( $response_data['message'], 'API rate limit exceeded') !== false ) {
+            $status = 'Failed';
+            $deployment_log = new WP_GitDeploy_Deployments(
+                $status, 
+                __( 'WP -> GitHub', 'wp-gitdeploy' ), 
+                sprintf(
+                    __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'wp-gitdeploy' ),
+                    $limit_cap,
+                    $rate_used,
+                    $human_readable_time
+                )
+            );
+            if ( file_exists( $zip_file ) ) {
+                unlink( $zip_file );
+            }
+            update_option( 'wp_gitdeploy_resync_in_progress', false, false );
+            return false;
+        }
+    }
+
+    if ( is_wp_error( $response ) ) {
+        $status = 'Failed';
+        $error_string = $response->get_error_message();
+        $deployment_log = new WP_GitDeploy_Deployments( $status, 
+            __( 'WP -> GitHub' ),
+            sprintf(
+                __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'wp-gitdeploy' ),
+                $error_string,
+                $limit_cap,
+                $rate_used,
+                $human_readable_time
+            )
+        );
+        if ( file_exists( $zip_file ) ) {
+            unlink( $zip_file );
+        }
+        update_option( 'wp_gitdeploy_resync_in_progress', false, false );
+        return false;
+    }
+
+    if ( 200 === $response_code ) {
+        if ( isset( $response_data[ 'status' ] ) && 
+        $response_data[ 'status' ] !== 'queued' ||
+        $response_data[ 'status' ] !== 'requested' ||
+        $response_data[ 'status' ] !== 'in_progress' ||
+        $response_data[ 'status' ] !== 'waiting' ||
+        $response_data[ 'status' ] !== 'requested' ) {
+            return true; // the action workflow is not running, so we can now proceed with deletion.
+        }
+    }
+}

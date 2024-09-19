@@ -4,7 +4,7 @@ add_action('rest_api_init', function () {
     register_rest_route('wp_gitdeploy/v1', '/webhook', [
         'methods' => 'POST',
         'callback' => 'wp_gitdeploy_handle_webhook',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'wp_gitdeploy_permission_callback',
     ]);
 });
 
