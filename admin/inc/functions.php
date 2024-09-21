@@ -108,15 +108,8 @@ function wp_gitdeploy_finish_setup() {
     $gh_token = $creds[ 'wp_gitdeploy_token' ] ?? '';
     $repo_name = $creds[ 'wp_gitdeploy_repo' ] ?? '';
 
-    $webhook_created_for = 'https://github.com/' . $username . '/' . $repo_name . '/' . $gh_token;
-    $webhook_already_created_for = get_option( 'wp_gitdeploy_webhook_created_repo', array() );
-
     if ( ! $username || ! $gh_token || ! $repo_name ) {
         return __('Couldn\'t complete Setup. Required Credentials are missing. Please re-save the settings from Step 2', 'wp-gitdeploy');
-    }
-
-    if ( isset( $webhook_already_created_for[ $webhook_created_for ] ) ) {
-        return true;
     }
 
     // GitHub API endpoint to create a webhook
@@ -161,19 +154,75 @@ function wp_gitdeploy_finish_setup() {
     }
 
     $response_body = wp_remote_retrieve_body($response);
+    $response_code = wp_remote_retrieve_response_code( $response );
     $response_data = json_decode($response_body, true);
 
-    if ( isset( $response_data[ 'id' ] ) ) {
-        // just adding it to the array.
-        $webhook_already_created_for[ $webhook_created_for ] = 1;
-        update_option( 'wp_gitdeploy_webhook_created_repo', $webhook_already_created_for, 'no' );
+    if ( 422 === $response_code ) {
         return true;
+    }
+
+    if ( 403 === $response_code ) {
+        return __( 'Forbidden: API Rate limit exceeded' );
+    }
+
+    if ( 404 === $response_code ) {
+        return __( 'Repository credentials are not correct' );
+    }
+
+    if ( isset( $response_data[ 'id' ] ) ) {
+        $workflow_response = wp_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token );
+
+        if ( 'could_not_change_workflow_setting' === $workflow_response ) {
+            return __( 'Couldn\'t modify Workflow permissions for your repository. Maybe your organization is preventing it?' );
+        } elseif ( 'api_limit_exceeded' === $workflow_response ) {
+            return __( 'GitHub API rate limit exceeded of your account.' );
+        } else {
+            return true;
+        }
     } else {
         // Webhook creation failed
         return sprintf(
             __('Failed to create GitHub webhook. Error: %s', 'wp-gitdeploy'),
             $response_data[ 'message' ]
         );
+    }
+}
+
+/**
+ * Function to set the workflow permissions for the repo to write.
+ */
+function wp_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token ) {
+    // GitHub API endpoint to create a webhook
+    $api_url = "https://api.github.com/repos/$username/$repo_name/actions/permissions/workflow";
+
+    // Data to send to GitHub API
+    $data = json_encode( array(
+        'default_workflow_permissions' => 'write'
+    ));
+
+    // Set up the HTTP request
+    $response = wp_remote_request( $api_url, array(
+        'method'  => 'PUT',
+        'headers' => array(
+            'Authorization' => 'token ' . $gh_token,
+            'Accept'        => 'application/vnd.github.v3+json',
+            'User-Agent'    => 'WordPress GitDeploy Plugin'
+        ),
+        'body'      => $data,
+        'timeout'   => 45,
+        'sslverify' => false
+    ));
+
+    if ( is_wp_error( $response ) ) {
+        return 'wp_error';
+    }
+
+    if ( 409 === wp_remote_retrieve_response_code( $response ) ) {
+        return 'could_not_change_workflow_setting';
+    } elseif ( 403 === wp_remote_retrieve_response_code( $response ) ) {
+        return 'api_limit_exceeded';
+    } else {
+        return true;
     }
 }
 
@@ -290,13 +339,17 @@ function wp_gitdeploy_resync_action() {
                     if (!$file->isDir()) {
                         $file_path = $file->getRealPath();
                         $relative_path = substr($file_path, strlen($wp_content_dir) + 1);
-                        $zip->addFile($file_path, $relative_path);
+                        if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                            $zip->addFile($file_path, $relative_path);
+                        }
                     }
                 }
             } elseif (is_file($full_path)) {
                 // Add the individual file to the ZIP file
                 $relative_path = substr($full_path, strlen($wp_content_dir) + 1);
-                $zip->addFile($full_path, $relative_path);
+                if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                    $zip->addFile($full_path, $relative_path);
+                }
             }
         }
 

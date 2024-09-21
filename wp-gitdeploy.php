@@ -49,6 +49,7 @@ require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/hooks.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/endpoints/github-to-wp-endpoint.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/endpoints/wp-to-github-endpoint.php' );
 require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/assets/assets.php' );
+require_once( WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/admin-notices.php' );
 
 /**
  * Hooks.

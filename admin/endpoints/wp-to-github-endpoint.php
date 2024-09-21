@@ -41,6 +41,7 @@ function wp_gitdeploy_push_completed_permission_callback( $request ) {
 
 function wp_gitdeploy_handle_push_completed(WP_REST_Request $request) {
     $file_name = $request->get_param( 'file_name' );
+    $status_from_gh = $request->get_param( 'status' );
     $zip_file = WP_GITDEPLOY_RESYNC_DIR . $file_name;
 
     if ( file_exists( $zip_file ) ) {
@@ -49,9 +50,18 @@ function wp_gitdeploy_handle_push_completed(WP_REST_Request $request) {
 
     update_option( 'wp_gitdeploy_resync_in_progress', false, false );
 
-    $status = 'Success';
-    $deployment_log = new WP_GitDeploy_Deployments( $status, 
-        __( 'WP -> GitHub' ), __( 'Resync Deployment from WordPress code to GitHub repository has been completed.' ) );
-
-    return new WP_REST_Response('Webhook processed successfully', 200);
+    if ( 'success' === $status_from_gh ) {
+        $status = 'Success';
+        $deployment_log = new WP_GitDeploy_Deployments( $status, 
+            __( 'WP -> GitHub' ), __( 'Resync Deployment from WordPress code to GitHub repository has been completed.' ) );
+        
+        delete_option( 'wp_gitdeploy_first_resync' );
+        return new WP_REST_Response('Webhook processed successfully', 200);
+    } else {
+        $status = 'Failed';
+        $deployment_log = new WP_GitDeploy_Deployments( $status, 
+            __( 'WP -> GitHub' ), __( 'An error was reported from GitHub Actions. Please Check the latest WorkFlow job under the Actions tab of your repository.' ) );
+    
+        return new WP_REST_Response('Webhook processed successfully', 200);
+    }
 }

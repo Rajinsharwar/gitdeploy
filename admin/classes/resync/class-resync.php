@@ -76,7 +76,8 @@ class WP_GitDeploy_Resync {
                         $human_readable_time
                     )
                 );
-                return;
+                unlink( $this->zip_file );
+                return false;
             }
         }
 
@@ -93,10 +94,28 @@ class WP_GitDeploy_Resync {
                     $human_readable_time
                 )
             );
+            unlink( $this->zip_file );
             return false;
-        } else {
+        }
+        
+        if ( 204 === $response_code ) {
             update_option( 'wp_gitdeploy_resync_in_progress', 'yes', false );
             return true;
+        } else {
+            $this->status = 'Failed';
+            $error_string = wp_remote_retrieve_body( $response );
+            $deployment_log = new WP_GitDeploy_Deployments( $this->status, 
+                __( 'WP -> GitHub' ),
+                sprintf(
+                    __( 'Error from Github API. <br><br> %s. <br><br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'wp-gitdeploy' ),
+                    $error_string,
+                    $limit_cap,
+                    $rate_used,
+                    $human_readable_time
+                )
+            );
+            unlink( $this->zip_file );
+            return false;
         }
     }
 }

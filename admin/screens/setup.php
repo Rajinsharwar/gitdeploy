@@ -56,6 +56,7 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
             if ( true === wp_gitdeploy_process_workflow_file() ) {
                 // Successfully created/updated workflow file.
                 update_option('wp_gitdeploy_setup_complete', 1);
+                update_option('wp_gitdeploy_first_resync', 1);
                 echo '<div class="updated"><p>' . __('Setup has been completed! Thank you!', 'wp-gitdeploy') . '</p></div>';
             } elseif ( 'missing_creds' === $workflow_file_setup ) {
                 echo '<div class="error"><p>' . __( 'Please enter correct credentials in Step 1, and Save Settings first!', 'wp-gitdeploy' ) . '</p></div>';
@@ -68,7 +69,7 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
             } elseif ( 'api_request_failed_2' === $workflow_file_setup ) {
                 echo '<div class="error"><p>' . __( 'Failed to communicate with GitHub API to update the workflow file', 'wp-gitdeploy') . '</p></div>';
             } elseif ( 'api_request_failed_3' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'Connection with GitHub API caused an unexpected error.', 'wp-gitdeploy') . '</p></div>';
+                echo '<div class="error"><p>' . __( 'Connection with GitHub API caused an unexpected error, please re-check your Credentials, Repo and Branch in Step 1.', 'wp-gitdeploy') . '</p></div>';
             } elseif ( 'api_rate_limit_exceeded' === $workflow_file_setup ) {
                 echo '<div class="error"><p>' . __( 'GitHub API rate of your account has exceeded it\'s limit, kindly wait one hour for the rate limit to reset.', 'wp-gitdeploy') . '</p></div>';
             }
@@ -94,12 +95,17 @@ $finish_setup_disabled = ! (
     <p><?php _e('Setup your WP GitDeploy from here.', 'wp-gitdeploy'); ?></p>
 
     <!-- Setup Complete Message -->
-    <?php if ( $setup_done ): ?>
+    <?php if ( $setup_done ) { ?>
         <div class="setup-complete">
             <span class="dashicons dashicons-yes"></span>
             <span><?php _e('Setup complete!', 'wp-gitdeploy'); ?></span>
         </div>
-    <?php endif; ?>
+    <?php } else { ?>
+        <div class="setup-incomplete">
+            <span class="dashicons dashicons-info"></span>
+            <span><?php _e('Setup not yet complete, please finish the Setup!', 'wp-gitdeploy'); ?></span>
+        </div>
+    <?php } ?>
         
         <div class="wp-gitdeploy-setup-steps">
         <!-- <div class="step">
@@ -192,19 +198,7 @@ $finish_setup_disabled = ! (
         <div class="wp-gitdeploy-setup-steps">
             <div class="step">
                 <h2><?php _e('Step 2: Finish Setup', 'wp-gitdeploy'); ?></h2>
-                <p><?php _e('After entering your GitHub credentials, click \'Finish Setup\' to complete the setup. Please ensure the necessary permissions are set for GitHub Actions to work correctly.', 'wp-gitdeploy'); ?></p>
-                
-                <h3><?php _e('Important: Configure Workflow Permissions in GitHub', 'wp-gitdeploy'); ?></h3>
-                <p><?php _e('To ensure the GitHub Actions workflows can operate correctly, you need to set the workflow permissions in your GitHub repository. Follow these steps:', 'wp-gitdeploy'); ?></p>
-                <ol>
-                    <li><?php _e('Go to your GitHub repository on the GitHub website.', 'wp-gitdeploy'); ?></li>
-                    <li><?php _e('Click on the "Settings" tab located at the top of your repository page.', 'wp-gitdeploy'); ?></li>
-                    <li><?php _e('In the left sidebar, click on "Actions" under the "Code and automation" section.', 'wp-gitdeploy'); ?></li>
-                    <li><?php _e('In the "Actions" > "General" settings page, find the "Workflow permissions" section.', 'wp-gitdeploy'); ?></li>
-                    <li><?php _e('Select "Read and write permissions" to allow workflows to modify the repository.', 'wp-gitdeploy'); ?></li>
-                    <li><?php _e('Click "Save" to apply the changes.', 'wp-gitdeploy'); ?></li>
-                </ol>
-                <p><?php _e('Once the permissions are set, you can return to this page and click \'Finish Setup\' to complete the configuration.', 'wp-gitdeploy'); ?></p>
+                <p><?php _e('After entering your GitHub credentials, please click \'Finish Setup\' to complete the setup.', 'wp-gitdeploy'); ?></p>                
                 <button type="submit" name="finish_setup" class="button button-primary" <?php echo $finish_setup_disabled ? 'disabled' : ''; ?>><?php _e('Finish Setup', 'wp-gitdeploy'); ?></button>
             </div>
         </div>

@@ -33,6 +33,21 @@
     font-size: 24px;
     margin-right: 10px;
 }
+.setup-incomplete {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid #d4edda;
+    background-color: #1d97e3;
+    color: #ffffff;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.setup-incomplete .dashicons-info {
+    font-size: 20px;
+    margin-right: 10px;
+}
 #files-list {
     list-style: none;
     padding: 0;
