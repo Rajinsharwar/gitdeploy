@@ -30,13 +30,17 @@ function wp_gitdeploy_generate_zip() {
                     if (!$file->isDir()) {
                         $file_path = $file->getRealPath();
                         $relative_path = substr($file_path, strlen($wp_content_dir) + 1);
-                        $zip->addFile($file_path, $relative_path);
+                        if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                            $zip->addFile($file_path, $relative_path);
+                        }
                     }
                 }
             } elseif (is_file($full_path)) {
                 // Add the individual file to the ZIP file
                 $relative_path = substr($full_path, strlen($wp_content_dir) + 1);
-                $zip->addFile($full_path, $relative_path);
+                if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                    $zip->addFile($full_path, $relative_path);
+                }
             }
         }
 
@@ -315,6 +319,47 @@ function wp_gitdeploy_resync_action() {
     // Check nonce for security
     check_ajax_referer('wp_gitdeploy_resync_nonce', 'nonce');
 
+    if ( ! get_option( 'wp_gitdeploy_setup_complete' ) ) {
+        wp_send_json_success(array(
+            'message' => wp_kses(
+                __('<p><b style="color: red;">Setup not completed yet!</b> <br> Complete the <u><a href="' . esc_url( admin_url( 'admin.php?page=wp_gitdeploy_setup' ) ) . '" style="color: blue;">Setup</a></u> first.</p>', 'wp-gitdeploy'),
+                array(
+                    'p' => array(),
+                    'b' => array('style' => array()),
+                    'br' => array(),
+                    'i' => array(),
+                    'u' => array(),
+                    'a' => array(
+                        'href' => array(),
+                        'target' => array(),
+                        'style' => array(),
+                    )
+                )
+            )
+        ));
+    }    
+
+    // Bail out for already running sync
+    if ( 'yes' === get_option( 'wp_gitdeploy_resync_in_progress' ) ) {
+        wp_send_json_success(array(
+            'message' => wp_kses(
+                __('<p><b style="color: red;">One Resync action is already running!</b> <br> Check the <u>Actions</u> tab in your GitHub respository for the latest workflow progress.</p>', 'wp-gitdeploy'),
+                array(
+                    'p' => array(),
+                    'b' => array('style' => array()),
+                    'br' => array(),
+                    'i' => array(),
+                    'u' => array(),
+                    'a' => array(
+                        'href' => array(),
+                        'target' => array(),
+                        'style' => array(),
+                    )
+                )
+            )
+        ));
+    }
+
     $items_to_include = wp_gitdeploy_allowed_items();
 
     $zip = new ZipArchive();
@@ -358,11 +403,44 @@ function wp_gitdeploy_resync_action() {
 
     //Instantiate the class and run the resync
     $resync = new WP_GitDeploy_Resync( $zip_file_url, $zip_file );
-    if ( true === $result = $resync->sync() ) {
+    $result = $resync->sync();
+    if ( true === $result ) {
         // Return success response
-        wp_send_json_success('Resync Complete');   
+        wp_send_json_success(array(
+            'message' => wp_kses(
+                __('<p><b> Resync request sent!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=wp_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for status.</p>', 'wp-gitdeploy'),
+                array(
+                    'p' => array(),
+                    'b' => array('style' => array()),
+                    'br' => array(),
+                    'i' => array(),
+                    'u' => array(),
+                    'a' => array(
+                        'href' => array(),
+                        'target' => array(),
+                        'style' => array(),
+                    )
+                )
+            )
+        ));
     } else {
-        wp_send_json_error('Failed to Resync');
+        wp_send_json_error(array(
+            'message' => wp_kses(
+                __('<p><b style="color: red;">Failed to resync!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=wp_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for info.</p>', 'wp-gitdeploy'),
+                array(
+                    'p' => array(),
+                    'b' => array('style' => array()),
+                    'br' => array(),
+                    'i' => array(),
+                    'u' => array(),
+                    'a' => array(
+                        'href' => array(),
+                        'target' => array(),
+                        'style' => array(),
+                    )
+                )
+            )
+        ));
     }
 }
 

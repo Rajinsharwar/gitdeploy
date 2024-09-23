@@ -10,10 +10,16 @@ jQuery(document).ready(function($) {
                 nonce: wp_gitdeploy_resync_ajax.nonce
             },
             success: function(response) {
-                $('#resync-status').html('<p>Resync Complete!</p>');
+                // Check if the response has the success key
+                $('#resync-status').html(response.data.message);
             },
-            error: function() {
-                $('#resync-status').html('<p>Resync Failed!</p>');
+            error: function(response) {
+                // Use the error message returned from the PHP function if available
+                if (response.responseJSON && response.responseJSON.data && response.responseJSON.data.message) {
+                    $('#resync-status').html('<p>' + response.responseJSON.data.message + '</p>');
+                } else {
+                    $('#resync-status').html('<p>Resync Failed!</p>');
+                }
             }
         });
     });

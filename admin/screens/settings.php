@@ -10,6 +10,28 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
         echo '<div class="error"><p>Nonce verification failed. Settings not saved.</p></div>';
     }
 }
+
+$setup_done = get_option( 'wp_gitdeploy_setup_complete' );
+
+// Setup Complete Message
+if ( $setup_done ) { ?>
+    <div class="setup-complete">
+        <span class="dashicons dashicons-yes"></span>
+        <span><?php _e('Setup complete!', 'wp-gitdeploy'); ?></span>
+    </div>
+<?php } else { ?>
+    <div class="setup-incomplete">
+        <span class="dashicons dashicons-info"></span>
+        <span>
+            <?php
+            echo sprintf(
+                __('Setup not yet complete, please <a style="color: white;" href="%s">finish the Setup</a>!', 'wp-gitdeploy'),
+                esc_url(admin_url('admin.php?page=wp_gitdeploy_setup'))
+            );
+            ?>
+        </span>
+    </div>
+<?php }
 ?>
 
 <div class="wrap">

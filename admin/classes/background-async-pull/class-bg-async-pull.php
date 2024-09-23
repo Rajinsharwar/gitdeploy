@@ -18,6 +18,14 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 	 * during the async request.
 	 */
     protected function handle() {
+        if ( ! get_option( 'wp_gitdeploy_setup_complete' ) ) {
+            $this->status = 'Failed';
+            $this->reason = __( 'Setup of the plugin is not completed yet.', 'wp-gitdeploy' );
+            $deployment_log = new \WP_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, array() );
+            return;
+        }
+
+
         $creds = get_option( 'wp_gitdeploy_creds', array() );
     
         $username = $creds[ 'wp_gitdeploy_username' ] ?? '';
@@ -25,7 +33,12 @@ class WP_GitDeploy_Async extends WP_Async_Request {
         $repo = $creds[ 'wp_gitdeploy_repo' ] ?? '';
         $branch = $creds[ 'wp_gitdeploy_repo_branch' ] ?? 'main';
     
-        $changed_files = $_POST[ 'changed_files' ];
+        $filtered_files = array_filter( $_POST[ 'changed_files' ], function( $file ) {
+            return strpos( $file, 'plugins/wp-gitdeploy' ) !== 0; // Keep files that do not start with this path
+        });
+        
+        $changed_files = array();
+        $changed_files = array_values( $filtered_files );
     
         $this->status = 'Success'; // Default status is success.
         $this->reason = '';
@@ -55,6 +68,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
             $this->reason = __( 'Failed to download the GitHub repository ZIP file.', 'wp-gitdeploy' );
         }
 
+        delete_option( 'wp_gitdeploy_deployment_in_progress' );
         $deployment_log = new \WP_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, json_encode( $changed_files ) );
     }
 

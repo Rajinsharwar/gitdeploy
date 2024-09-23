@@ -12,7 +12,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 $('#loading-indicator').hide();
                 if(response.success) {
-                    $('#download-link').html('<a href="' + response.data.zip_url + '" class="button">Download ZIP</a>');
+                    $('#download-link').html('<a href="' + response.data.zip_url + '" class="button button-primary">Download ZIP</a>');
                     $('#download-link').show();
                 } else {
                     alert('Failed to generate ZIP. Please try again.');

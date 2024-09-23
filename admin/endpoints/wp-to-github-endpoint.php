@@ -48,7 +48,7 @@ function wp_gitdeploy_handle_push_completed(WP_REST_Request $request) {
         unlink( $zip_file );
     }
 
-    update_option( 'wp_gitdeploy_resync_in_progress', false, false );
+    delete_option( 'wp_gitdeploy_resync_in_progress' );
 
     if ( 'success' === $status_from_gh ) {
         $status = 'Success';

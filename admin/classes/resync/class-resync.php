@@ -62,6 +62,18 @@ class WP_GitDeploy_Resync {
             $human_readable_time = 'N/A';
         }
 
+        // check for api error.
+        if ( $response_code === 403 ) {
+            $this->status = 'Failed';
+            $deployment_log = new WP_GitDeploy_Deployments(
+                $this->status, 
+                __( 'WP -> GitHub', 'wp-gitdeploy' ), 
+                __( 'Wrong API credentials given.', 'wp-gitdeploy' )
+            );
+            unlink( $this->zip_file );
+            return false;
+        }
+
         // check for api rate limit.
         if ( $response_code === 403 ) {
             if ( isset( $response_data['message'] ) && strpos( $response_data['message'], 'API rate limit exceeded') !== false ) {
@@ -79,6 +91,18 @@ class WP_GitDeploy_Resync {
                 unlink( $this->zip_file );
                 return false;
             }
+        }
+
+        // check for api rate limit.
+        if ( $response_code === 404 ) {
+            $this->status = 'Failed';
+            $deployment_log = new WP_GitDeploy_Deployments(
+                $this->status, 
+                __( 'WP -> GitHub', 'wp-gitdeploy' ),
+                __( 'Connected GitHub Repository was not found.', 'wp-gitdeploy' )
+            );
+            unlink( $this->zip_file );
+            return false;
         }
 
         if ( is_wp_error( $response ) ) {

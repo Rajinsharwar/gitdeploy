@@ -22,15 +22,6 @@ function wp_gitdeploy_admin_enqueue_scripts($hook) {
         );
     }
 
-    // Enqueue the script
-    wp_enqueue_script(
-        'wp-git-deploy-admin-download-field', // Handle
-        WP_GITDEPLOY_PLUGIN_URL . 'admin/assets/js/download-zip.js', // Script path
-        array('jquery'), // Dependencies
-        null, // Version (null for no version)
-        true // Load in footer
-    );
-
     if ( 'wp-gitdeploy_page_wp_gitdeploy_deployments' === $hook ) {
         wp_enqueue_script(
             'wp-git-deploy-deployments-model', // Handle
@@ -56,6 +47,15 @@ function wp_gitdeploy_admin_enqueue_scripts($hook) {
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('wp_gitdeploy_resync_nonce')
         ]);
+
+        // Enqueue the script
+        wp_enqueue_script(
+            'wp-git-deploy-admin-download-field', // Handle
+            WP_GITDEPLOY_PLUGIN_URL . 'admin/assets/js/download-zip.js', // Script path
+            array('jquery'), // Dependencies
+            null, // Version (null for no version)
+            true // Load in footer
+        );
     }
 
     // Enqueue the style
