@@ -23,13 +23,12 @@ if ( $setup_done ) { ?>
 <?php }
 
 global $wpdb;
-$table_name = $wpdb->prefix . 'wp_gitdeploy_deployments';
 
 // Deleting all logs
 if (isset($_POST['action']) && $_POST['action'] === 'clear_logs') {
     if (check_admin_referer('wp_gitdeploy_clear_logs_nonce', 'wp_gitdeploy_nonce_field')) {
         // Clear all logs
-        $wpdb->query("TRUNCATE TABLE $table_name");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}wp_gitdeploy_deployments");
 
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success is-dismissible"><p>' . __('All logs have been cleared.', 'wp-gitdeploy') . '</p></div>';
@@ -67,13 +66,13 @@ $offset = ($paged - 1) * $limit;
 // Get deployments
 $deployments = $wpdb->get_results(
     $wpdb->prepare(
-        "SELECT * FROM $table_name ORDER BY deployment_time DESC LIMIT %d OFFSET %d",
+        "SELECT * FROM {$wpdb->prefix}wp_gitdeploy_deployments ORDER BY deployment_time DESC LIMIT %d OFFSET %d",
         $limit, $offset
     )
 );
 
 // Total deployments count
-$total_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+$total_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}wp_gitdeploy_deployments");
 $total_pages = ceil($total_count / $limit);
 
 // Group deployments by date

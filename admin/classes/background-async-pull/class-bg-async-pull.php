@@ -33,9 +33,17 @@ class WP_GitDeploy_Async extends WP_Async_Request {
         $repo = $creds[ 'wp_gitdeploy_repo' ] ?? '';
         $branch = $creds[ 'wp_gitdeploy_repo_branch' ] ?? 'main';
     
-        $filtered_files = array_filter( $_POST[ 'changed_files' ], function( $file ) {
-            return strpos( $file, 'plugins/wp-gitdeploy' ) !== 0; // Keep files that do not start with this path
-        });
+        if ( isset( $_POST['changed_files'] ) && is_array( $_POST['changed_files'] ) ) {
+            $changed_files = wp_unslash( $_POST['changed_files'] );
+            $changed_files = array_map( 'sanitize_text_field', $changed_files );
+            
+            // Exclude 'plugins/wp-gitdeploy'
+            $filtered_files = array_filter( $changed_files, function( $file ) {
+                return strpos( $file, 'plugins/wp-gitdeploy' ) !== 0;
+            });
+        } else {
+            $filtered_files = [];
+        }               
         
         $changed_files = array();
         $changed_files = array_values( $filtered_files );
@@ -46,7 +54,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
         // Define the directory to store the downloaded ZIP file and extracted contents
         $pull_dir = WP_GITDEPLOY_PULL_DIR;
         if ( ! file_exists( $pull_dir ) ) {
-            mkdir( $pull_dir, 0755, true );
+            wp_mkdir_p( $pull_dir, 0755, true );
         }
 
         // Download the ZIP archive from GitHub
@@ -69,7 +77,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
         }
 
         delete_option( 'wp_gitdeploy_deployment_in_progress' );
-        $deployment_log = new \WP_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, json_encode( $changed_files ) );
+        $deployment_log = new \WP_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, wp_json_encode( $changed_files ) );
     }
 
     /**
@@ -177,26 +185,42 @@ class WP_GitDeploy_Async extends WP_Async_Request {
      * @param string $target_dir The root folder where the contents should be moved.
      */
     protected function move_files_to_root( $source_dir, $target_dir ) {
-        $files = scandir( $source_dir );
-
+        global $wp_filesystem;
+    
+        if ( ! function_exists( 'WP_Filesystem' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        WP_Filesystem();
+    
+        if ( ! $wp_filesystem->is_dir( $source_dir ) ) {
+            $this->status = 'Failed';
+            $this->reason = __( 'Source directory does not exist.', 'wp-gitdeploy' );
+            return;
+        }
+    
+        $files = $wp_filesystem->dirlist( $source_dir );
+    
         if ( ! $files ) {
             $this->status = 'Failed';
             $this->reason = __( 'Couldn\'t scan Repo Data after downloading.', 'wp-gitdeploy' );
             return;
         }
-
-        foreach ( $files as $file ) {
-            if ( $file != '.' && $file != '..' ) {
-                $rename = rename( $source_dir . '/' . $file, $target_dir . '/' . $file );
-
-                if ( ! $rename ) {
-                    $this->status = 'Failed';
-                    $this->reason = __( 'Couldn\'t rename Repo data after downloading.', 'wp-gitdeploy' );
-                    return;
-                }
+    
+        foreach ( $files as $file => $file_info ) {
+            // Build the source and destination paths.
+            $source_path = trailingslashit( $source_dir ) . $file;
+            $target_path = trailingslashit( $target_dir ) . $file;
+    
+            // Move the file or directory.
+            $moved = $wp_filesystem->move( $source_path, $target_path, true );
+    
+            if ( ! $moved ) {
+                $this->status = 'Failed';
+                $this->reason = sprintf( __( 'Couldn\'t move file: %s to the target directory.', 'wp-gitdeploy' ), $file );
+                return;
             }
         }
-    }
+    }    
 
     /**
      * Replace the changed files in the correct WordPress content directory (plugins, themes, mu-plugins).
@@ -205,10 +229,8 @@ class WP_GitDeploy_Async extends WP_Async_Request {
      * @param array $changed_files Array of changed file paths.
      */
     protected function replace_changed_files( $extract_folder, $changed_files ) {
-        // Base directory for the wp-content directory
         $content_dir = WP_CONTENT_DIR . '/';
 
-        // Directories for plugins, themes, and mu-plugins
         $plugin_dir = $content_dir . 'plugins/';
         $theme_dir = $content_dir . 'themes/';
         $mu_plugin_dir = $content_dir . 'mu-plugins/';
@@ -220,32 +242,25 @@ class WP_GitDeploy_Async extends WP_Async_Request {
         }
 
         foreach ( $changed_files as $changed_file ) {
-            // Determine where the file should go based on its path
             if ( strpos( $changed_file, 'plugins/' ) === 0 ) {
-                // If it's a plugin file, copy to the plugins directory
                 $src_file = $extract_folder . $changed_file;
                 $dest_file = $plugin_dir . substr( $changed_file, strlen( 'plugins/' ) );
 
             } elseif ( strpos( $changed_file, 'themes/' ) === 0 ) {
-                // If it's a theme file, copy to the themes directory
                 $src_file = $extract_folder . $changed_file;
                 $dest_file = $theme_dir . substr( $changed_file, strlen( 'themes/' ) );
 
             } elseif ( strpos( $changed_file, 'mu-plugins/' ) === 0 ) {
-                // If it's an mu-plugin file, copy to the mu-plugins directory
                 $src_file = $extract_folder . $changed_file;
                 $dest_file = $mu_plugin_dir . substr( $changed_file, strlen( 'mu-plugins/' ) );
 
             } else {
-                // If it doesn't match any known type, continue (you can also log or handle this case if necessary)
                 continue;
             }
 
-            // Ensure the source file exists in the extracted folder
             if ( file_exists( $src_file ) ) {
-                // Ensure the destination directory exists
                 if ( ! file_exists( dirname( $dest_file ) ) ) {
-                    $mkdir = mkdir( dirname( $dest_file ), 0755, true );
+                    $mkdir = wp_mkdir_p( dirname( $dest_file ), 0755, true );
 
                     if ( ! $mkdir ) {
                         $this->status = 'Failed';
@@ -265,7 +280,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
             } else {
                 // If the source file does not exist, remove the file from the destination
                 if ( file_exists( $dest_file ) ) {
-                    $unlink = unlink( $dest_file );
+                    $unlink = wp_delete_file( $dest_file );
 
                     if ( ! $unlink ) {
                         $this->status = 'Failed';
@@ -290,7 +305,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
             if ( is_dir( $file ) ) {
                 $this->delete_directory( $file );
             } else {
-                unlink( $file );
+                wp_delete_file( $file );
             }
         }
     }
@@ -301,6 +316,13 @@ class WP_GitDeploy_Async extends WP_Async_Request {
      * @param string $dir Directory to delete.
      */
     protected function delete_directory( $dir ) {
+        global $wp_filesystem;
+    
+        if ( ! function_exists( 'WP_Filesystem' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        WP_Filesystem();
+        
         $files = array_diff( scandir( $dir ), [ '.', '..' ] );
 
         foreach ( $files as $file ) {
@@ -308,10 +330,10 @@ class WP_GitDeploy_Async extends WP_Async_Request {
             if ( is_dir( $path ) ) {
                 $this->delete_directory( $path );
             } else {
-                unlink( $path );
+                wp_delete_file( $path );
             }
         }
 
-        rmdir( $dir );
+        $wp_filesystem->rmdir( $dir );
     }
 }

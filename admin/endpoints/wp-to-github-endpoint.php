@@ -45,7 +45,7 @@ function wp_gitdeploy_handle_push_completed(WP_REST_Request $request) {
     $zip_file = WP_GITDEPLOY_RESYNC_DIR . $file_name;
 
     if ( file_exists( $zip_file ) ) {
-        unlink( $zip_file );
+        wp_delete_file( $zip_file );
     }
 
     delete_option( 'wp_gitdeploy_resync_in_progress' );

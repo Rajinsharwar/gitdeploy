@@ -4,11 +4,12 @@ jQuery(document).ready(function($) {
 
         var id = $(this).data('id');
         $.ajax({
-            url: ajaxurl,
+            url: wpGitDeployData.ajaxurl, // Use localized ajaxurl
             type: 'POST',
             data: {
                 action: 'wp_gitdeploy_get_deployment_details',
                 id: id,
+                security: wpGitDeployData.nonce // Include nonce in request
             },
             success: function(response) {
                 if (response.success) {

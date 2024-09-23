@@ -31,6 +31,11 @@ function wp_gitdeploy_admin_enqueue_scripts($hook) {
             true // Load in footer
         );
 
+        wp_localize_script('wp-git-deploy-deployments-model', 'wpGitDeployData', [
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('wp_gitdeploy_deployments_view_nonce')
+        ]);
+
         // Enqueue the style
         wp_enqueue_style(
             'wp-git-deploy-deployments-page', // Handle

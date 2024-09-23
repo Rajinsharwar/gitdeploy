@@ -1,16 +1,16 @@
 <?php
 
 // Handle form submission for saving settings
-if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
+if ( ! empty( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST' ) {
     // Check if the nonce for saving settings is set and valid
-    if (isset($_POST['wp_gitdeploy_save_settings_nonce']) && wp_verify_nonce($_POST['wp_gitdeploy_save_settings_nonce'], 'wp_gitdeploy_save_settings')) {
+    if ( ! empty( $_POST['wp_gitdeploy_save_settings_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wp_gitdeploy_save_settings_nonce'] ) ), 'wp_gitdeploy_save_settings' ) ) {
         $wp_gitdeploy_creds = array();
-        $wp_gitdeploy_creds[ 'wp_gitdeploy_username' ] = sanitize_text_field( $_POST[ 'wp_gitdeploy_username' ] );
-        $wp_gitdeploy_creds[ 'wp_gitdeploy_token' ] = sanitize_text_field( $_POST[ 'wp_gitdeploy_token' ] );
-        $wp_gitdeploy_creds[ 'wp_gitdeploy_repo' ] = sanitize_text_field( $_POST[ 'wp_gitdeploy_repo' ] );
+        $wp_gitdeploy_creds[ 'wp_gitdeploy_username' ] = ! empty( $_POST[ 'wp_gitdeploy_username' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_username' ] ) ) : '';
+        $wp_gitdeploy_creds[ 'wp_gitdeploy_token' ] = ! empty( $_POST[ 'wp_gitdeploy_token' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_token' ] ) ) : '';
+        $wp_gitdeploy_creds[ 'wp_gitdeploy_repo' ] = ! empty( $_POST[ 'wp_gitdeploy_repo' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_repo' ] ) ) : '';
 
         // Save the Branch.
-        $selected_branch = sanitize_text_field( $_POST[ 'wp_gitdeploy_repo_branch' ] );
+        $selected_branch = ! empty( $_POST[ 'wp_gitdeploy_repo_branch' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_repo_branch' ] ) ) : '';
 
         if ( '' === $selected_branch ) {
             $selected_branch = 'main';
@@ -34,7 +34,7 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
         }
 
         // echo '<div class="updated"><p>Settings saved successfully. Please click Step 3: Finish Setup to continue</p></div>';
-    } elseif (isset($_POST['wp_gitdeploy_finish_setup_nonce']) && wp_verify_nonce($_POST['wp_gitdeploy_finish_setup_nonce'], 'wp_gitdeploy_finish_setup')) {
+    } elseif ( isset( $_POST[ 'wp_gitdeploy_finish_setup_nonce' ] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wp_gitdeploy_finish_setup_nonce'] ) ), 'wp_gitdeploy_finish_setup' ) ) {
         $wp_gitdeploy_creds = get_option( 'wp_gitdeploy_creds', array( 'wp_gitdeploy_username' => '', 'wp_gitdeploy_token' => '', 'wp_gitdeploy_repo' => '', 'wp_gitdeploy_repo_branch' => '' ) );
         
         // Update setup completion option

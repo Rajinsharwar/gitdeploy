@@ -80,6 +80,13 @@ function wp_gitdeploy_allowed_items() {
  * @since 1.0
  */
 function wp_gitdeploy_delete_zips() {
+    global $wp_filesystem;
+    
+    if ( ! function_exists( 'WP_Filesystem' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+    }
+    WP_Filesystem();
+
     $dir = WP_GITDEPLOY_UPLOAD_DIR;
 
     // Check if the directory exists
@@ -92,9 +99,9 @@ function wp_gitdeploy_delete_zips() {
         foreach ($files as $fileinfo) {
             $file_path = $fileinfo->getRealPath();
             if ($fileinfo->isDir()) {
-                rmdir($file_path); // Remove directory
+                $wp_filesystem->rmdir($file_path); // Remove directory
             } else {
-                unlink($file_path); // Remove file
+                wp_delete_file($file_path); // Remove file
             }
         }
     }
@@ -131,7 +138,7 @@ function wp_gitdeploy_finish_setup() {
     $webhook_events = array('push');
 
     // Data to send to GitHub API
-    $data = json_encode(array(
+    $data = wp_json_encode(array(
         'config' => $webhook_config,
         'events' => $webhook_events,
         'active' => true
@@ -200,7 +207,7 @@ function wp_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token
     $api_url = "https://api.github.com/repos/$username/$repo_name/actions/permissions/workflow";
 
     // Data to send to GitHub API
-    $data = json_encode( array(
+    $data = wp_json_encode( array(
         'default_workflow_permissions' => 'write'
     ));
 
@@ -281,13 +288,17 @@ function wp_gitdeploy_verify_github_signature( $request, $signature ) {
  * Send Deployment details via AJX
  */
 function wp_gitdeploy_get_deployment_details() {
+    check_ajax_referer('wp_gitdeploy_deployments_view_nonce', 'security');
+
     global $wpdb;
-    $table_name = $wpdb->prefix . 'wp_gitdeploy_deployments';
-    $id = intval($_POST['id']);
+    $id = isset( $_POST['id'] ) ? intval( sanitize_text_field( wp_unslash( $_POST['id'] ) ) ) : 0;
 
     $deployment = $wpdb->get_row(
-        $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id)
-    );
+        $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}wp_gitdeploy_deployments WHERE id = %d",
+            $id
+        )
+    );    
 
     if ($deployment) {
         $files_changed = json_decode($deployment->files_changed, true);
@@ -500,7 +511,7 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
                 )
             );
             if ( file_exists( $zip_file ) ) {
-                unlink( $zip_file );
+                wp_delete_file( $zip_file );
             }
             update_option( 'wp_gitdeploy_resync_in_progress', false, false );
             return false;
@@ -521,7 +532,7 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
             )
         );
         if ( file_exists( $zip_file ) ) {
-            unlink( $zip_file );
+            wp_delete_file( $zip_file );
         }
         update_option( 'wp_gitdeploy_resync_in_progress', false, false );
         return false;
@@ -609,7 +620,7 @@ function wp_gitdeploy_process_workflow_file() {
     $response = wp_remote_request( $api_url, [
         'method'  => 'PUT',
         'headers' => $headers,
-        'body'    => json_encode( $data ),
+        'body'    => wp_json_encode( $data ),
     ]);
 
     if ( is_wp_error( $response ) ) {

@@ -1,8 +1,8 @@
 <?php
 
 // Handle form submission and save options
-if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
-    if (isset($_POST['wp_gitdeploy_settings_nonce']) && wp_verify_nonce($_POST['wp_gitdeploy_settings_nonce'], 'wp_gitdeploy_save_settings')) {
+if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST' ) {
+    if ( ! empty( $_POST['wp_gitdeploy_settings_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wp_gitdeploy_settings_nonce'] ) ), 'wp_gitdeploy_save_settings' ) ) {
         update_option('wp_gitdeploy_disable_wp_management', isset($_POST['wp_gitdeploy_disable_wp_management']) ? '1' : '0');
         
         echo '<div class="updated"><p>Settings saved successfully.</p></div>';

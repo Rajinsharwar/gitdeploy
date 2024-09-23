@@ -30,7 +30,7 @@ class WP_GitDeploy_Resync {
     }
 
     public function sync() {
-        $post_fields = json_encode([
+        $post_fields = wp_json_encode([
             'ref' => $this->branch,
             'inputs' => [
                 'file_url' => $this->zip_file_url,
@@ -70,7 +70,7 @@ class WP_GitDeploy_Resync {
                 __( 'WP -> GitHub', 'wp-gitdeploy' ), 
                 __( 'Wrong API credentials given.', 'wp-gitdeploy' )
             );
-            unlink( $this->zip_file );
+            wp_delete_file( $this->zip_file );
             return false;
         }
 
@@ -88,7 +88,7 @@ class WP_GitDeploy_Resync {
                         $human_readable_time
                     )
                 );
-                unlink( $this->zip_file );
+                wp_delete_file( $this->zip_file );
                 return false;
             }
         }
@@ -101,7 +101,7 @@ class WP_GitDeploy_Resync {
                 __( 'WP -> GitHub', 'wp-gitdeploy' ),
                 __( 'Connected GitHub Repository was not found.', 'wp-gitdeploy' )
             );
-            unlink( $this->zip_file );
+            wp_delete_file( $this->zip_file );
             return false;
         }
 
@@ -118,7 +118,7 @@ class WP_GitDeploy_Resync {
                     $human_readable_time
                 )
             );
-            unlink( $this->zip_file );
+            wp_delete_file( $this->zip_file );
             return false;
         }
         
@@ -138,7 +138,7 @@ class WP_GitDeploy_Resync {
                     $human_readable_time
                 )
             );
-            unlink( $this->zip_file );
+            wp_delete_file( $this->zip_file );
             return false;
         }
     }
