@@ -11,6 +11,8 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
     private $reason;
 
+    private $dynamic_pull_dir;
+
 	/**
 	 * Handle
 	 *
@@ -66,7 +68,8 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
             if ( $dynamic_pull_dir ) {
                 // Replace the changed files
-                $this->replace_changed_files( $dynamic_pull_dir, $changed_files );
+                $this->dynamic_pull_dir = $dynamic_pull_dir;
+                $this->replace_all_files( $dynamic_pull_dir );
 
                 // Clean up the downloaded ZIP and extracted files
                 $this->cleanup_pull_dir( $pull_dir );
@@ -290,6 +293,100 @@ class WP_GitDeploy_Async extends WP_Async_Request {
                 }
             }
         }
+    }
+
+    /**
+     * Replace all files in the correct WordPress content directory (plugins, themes, mu-plugins),
+     * except the files under the 'plugins/wp-gitdeploy' directory.
+     *
+     * @param string $extract_folder The directory where the ZIP contents are extracted.
+     */
+    protected function replace_all_files( $extract_folder ) {
+        $content_dir = wp_normalize_path( WP_CONTENT_DIR ) . '/';
+
+        $plugin_dir = $content_dir . 'plugins/';
+        $theme_dir = $content_dir . 'themes/';
+        $mu_plugin_dir = $content_dir . 'mu-plugins/';
+
+        $changed_files = $this->iterateFiles( $extract_folder );
+
+        if ( ! $changed_files || count( $changed_files ) < 0 ) {
+            $this->status = 'Failed';
+            $this->reason = __( 'No changed files found.', 'wp-gitdeploy' );
+            return false;
+        }
+
+        foreach ( $changed_files as $changed_file ) {
+            if ( strpos( $changed_file, 'plugins/' ) === 0 && strpos( $changed_file, 'plugins/wp-gitdeploy/' ) !== 0 ) {
+                $src_file = $extract_folder . $changed_file;
+                $dest_file = $plugin_dir . substr( $changed_file, strlen( 'plugins/' ) );
+            } elseif ( strpos( $changed_file, 'themes/' ) === 0 ) {
+                $src_file = $extract_folder . $changed_file;
+                $dest_file = $theme_dir . substr( $changed_file, strlen( 'themes/' ) );
+            } elseif ( strpos( $changed_file, 'mu-plugins/' ) === 0 ) {
+                $src_file = $extract_folder . $changed_file;
+                $dest_file = $mu_plugin_dir . substr( $changed_file, strlen( 'mu-plugins/' ) );
+            } else {
+                continue;
+            }
+
+            if ( file_exists( $src_file ) ) {
+                if ( ! file_exists( dirname( $dest_file ) ) ) {
+                    $mkdir = wp_mkdir_p( dirname( $dest_file ), 0755, true );
+
+                    if ( ! $mkdir ) {
+                        $this->status = 'Failed';
+                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'wp-gitdeploy' );
+                        return false;
+                    }
+                }
+
+                // Copy the file from the extracted folder to the correct location
+                $copy = copy( $src_file, $dest_file );
+
+                if ( ! $copy ) {
+                    $this->status = 'Failed';
+                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'wp-gitdeploy' );
+                    return false;
+                }
+            } else {
+                // If the source file does not exist, remove the file from the destination
+                if ( file_exists( $dest_file ) ) {
+                    $unlink = wp_delete_file( $dest_file );
+
+                    if ( ! $unlink ) {
+                        $this->status = 'Failed';
+                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'wp-gitdeploy' );
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper function to iterate through all files, and get an array of them.
+     *
+     * @param string $dir Directory to get all files of.
+     */
+    public function iterateFiles( $dir ) {
+        $result = array();
+        $cdir = scandir( $dir );
+        
+        foreach ( $cdir as $key => $value ) {
+            if ( ! in_array( $value, array( ".", ".." ) ) ) {
+                $fullPath = wp_normalize_path( $dir . DIRECTORY_SEPARATOR . $value );
+                
+                if ( is_dir( $fullPath ) ) {
+                    // Merge the result of the recursive call
+                    $result = array_merge( $result, $this->iterateFiles( $fullPath ) );
+                } else {
+                    $result[] = str_replace( $this->dynamic_pull_dir, '', $fullPath ); // Store the full path of the file
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
