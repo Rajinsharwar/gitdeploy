@@ -69,7 +69,12 @@ class WP_GitDeploy_Async extends WP_Async_Request {
             if ( $dynamic_pull_dir ) {
                 // Replace the changed files
                 $this->dynamic_pull_dir = $dynamic_pull_dir;
-                $this->replace_all_files( $dynamic_pull_dir );
+                // This is a request to replace all files
+                if ( 'all' === $changed_files[ 0 ] ) {
+                    $this->replace_all_files( $dynamic_pull_dir );
+                } else {
+                    $this->replace_changed_files( $dynamic_pull_dir, $changed_files );   
+                }
 
                 // Clean up the downloaded ZIP and extracted files
                 $this->cleanup_pull_dir( $pull_dir );
@@ -312,7 +317,8 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
         if ( ! $changed_files || count( $changed_files ) < 0 ) {
             $this->status = 'Failed';
-            $this->reason = __( 'No changed files found.', 'wp-gitdeploy' );
+            $this->reason = __( 'No plugins, themes or mu-plugins found in the Github repo', 'wp-gitdeploy' );
+            delete_option( 'wp_gitdeploy_resync_in_progress' );
             return false;
         }
 
@@ -337,6 +343,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
                     if ( ! $mkdir ) {
                         $this->status = 'Failed';
                         $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'wp-gitdeploy' );
+                        delete_option( 'wp_gitdeploy_resync_in_progress' );
                         return false;
                     }
                 }
@@ -347,6 +354,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
                 if ( ! $copy ) {
                     $this->status = 'Failed';
                     $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'wp-gitdeploy' );
+                    delete_option( 'wp_gitdeploy_resync_in_progress' );
                     return false;
                 }
             } else {
@@ -357,11 +365,14 @@ class WP_GitDeploy_Async extends WP_Async_Request {
                     if ( ! $unlink ) {
                         $this->status = 'Failed';
                         $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'wp-gitdeploy' );
+                        delete_option( 'wp_gitdeploy_resync_in_progress' );
                         return false;
                     }
                 }
             }
         }
+
+        delete_option( 'wp_gitdeploy_resync_in_progress' );
     }
 
     /**
@@ -381,7 +392,13 @@ class WP_GitDeploy_Async extends WP_Async_Request {
                     // Merge the result of the recursive call
                     $result = array_merge( $result, $this->iterateFiles( $fullPath ) );
                 } else {
-                    $result[] = str_replace( $this->dynamic_pull_dir, '', $fullPath ); // Store the full path of the file
+                    $path = str_replace( $this->dynamic_pull_dir, '', $fullPath ); // Store the full path of the file
+                    if ( strpos( $path, 'plugins' ) === 0 || 
+                        strpos( $path, 'themes' ) === 0 || 
+                        strpos( $path, 'mu-plugins' ) === 0 ||
+                        strpos( $path, 'index' ) === 0 ) {
+                            $result[] = $path;
+                    }
                 }
             }
         }

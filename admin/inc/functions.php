@@ -311,8 +311,12 @@ function wp_gitdeploy_get_deployment_details() {
 
         if ( $files_changed ) {
             $details .= '<p><strong>Files Changed:</strong></p><ul>';
-            foreach ($files_changed as $file) {
-                $details .= '<li>' . esc_html($file) . '</li>';
+            if ( 'all' === $files_changed[ 0 ] ) {
+                $details .= '<li><i>' . __( '(Changed All Files in WordPress codebase from GitHub Repo)' ) . '</i></li>';
+            } else {
+                foreach ($files_changed as $file) {
+                    $details .= '<li>' . esc_html($file) . '</li>';
+                }
             }
         }
         $details .= '</ul>';
@@ -636,4 +640,17 @@ function wp_gitdeploy_process_workflow_file() {
     }
 
     return true;
+}
+
+// Your PHP function that handles the resync
+function wp_gitdeploy_resync_all_files_from_github_repo() {
+    update_option( 'wp_gitdeploy_resync_in_progress', 'yes' );
+    $payload = [
+        'commits' => [
+            [
+                'added' => [ 'all' ]
+            ]
+        ]
+    ];
+    $process = new WP_GitDeploy_Pull_from_GitHub( $payload );
 }
