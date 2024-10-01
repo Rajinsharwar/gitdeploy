@@ -3,75 +3,75 @@
 // Handle form submission for saving settings
 if ( ! empty( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST' ) {
     // Check if the nonce for saving settings is set and valid
-    if ( ! empty( $_POST['wp_gitdeploy_save_settings_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wp_gitdeploy_save_settings_nonce'] ) ), 'wp_gitdeploy_save_settings' ) ) {
-        $wp_gitdeploy_creds = array();
-        $wp_gitdeploy_creds[ 'wp_gitdeploy_username' ] = ! empty( $_POST[ 'wp_gitdeploy_username' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_username' ] ) ) : '';
-        $wp_gitdeploy_creds[ 'wp_gitdeploy_token' ] = ! empty( $_POST[ 'wp_gitdeploy_token' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_token' ] ) ) : '';
-        $wp_gitdeploy_creds[ 'wp_gitdeploy_repo' ] = ! empty( $_POST[ 'wp_gitdeploy_repo' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_repo' ] ) ) : '';
+    if ( ! empty( $_POST['mrs_gitdeploy_save_settings_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mrs_gitdeploy_save_settings_nonce'] ) ), 'mrs_gitdeploy_save_settings' ) ) {
+        $mrs_gitdeploy_creds = array();
+        $mrs_gitdeploy_creds[ 'mrs_gitdeploy_username' ] = ! empty( $_POST[ 'mrs_gitdeploy_username' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'mrs_gitdeploy_username' ] ) ) : '';
+        $mrs_gitdeploy_creds[ 'mrs_gitdeploy_token' ] = ! empty( $_POST[ 'mrs_gitdeploy_token' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'mrs_gitdeploy_token' ] ) ) : '';
+        $mrs_gitdeploy_creds[ 'mrs_gitdeploy_repo' ] = ! empty( $_POST[ 'mrs_gitdeploy_repo' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'mrs_gitdeploy_repo' ] ) ) : '';
 
         // Save the Branch.
-        $selected_branch = ! empty( $_POST[ 'wp_gitdeploy_repo_branch' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'wp_gitdeploy_repo_branch' ] ) ) : '';
+        $selected_branch = ! empty( $_POST[ 'mrs_gitdeploy_repo_branch' ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'mrs_gitdeploy_repo_branch' ] ) ) : '';
 
         if ( '' === $selected_branch ) {
             $selected_branch = 'main';
         }
 
-        $wp_gitdeploy_creds[ 'wp_gitdeploy_repo_branch' ] = $selected_branch;
+        $mrs_gitdeploy_creds[ 'mrs_gitdeploy_repo_branch' ] = $selected_branch;
 
         // Update setup completion option
-        update_option( 'wp_gitdeploy_creds', $wp_gitdeploy_creds, 'no' );
+        update_option( 'mrs_gitdeploy_creds', $mrs_gitdeploy_creds, 'no' );
 
         // Run Setup functions to setup webhook.
-        $setup_response = wp_gitdeploy_finish_setup();
+        $setup_response = mrs_gitdeploy_finish_setup();
         if ( true !== $setup_response ) {
-            update_option('wp_gitdeploy_setup_complete', 0);
-            update_option('wp_gitdeploy_creds_error', 1);
+            update_option('mrs_gitdeploy_setup_complete', 0);
+            update_option('mrs_gitdeploy_creds_error', 1);
             $setup_error = '<div class="error"><p>' . $setup_response . '</p></div>';
             echo $setup_error;
         } else {
-            update_option('wp_gitdeploy_creds_error', 0);
-            echo '<div class="updated"><p>' . __('Settings saved successfully', 'wp-gitdeploy') . '</p></div>';
+            update_option('mrs_gitdeploy_creds_error', 0);
+            echo '<div class="updated"><p>' . __('Settings saved successfully', 'mrs-gitdeploy') . '</p></div>';
         }
 
         // echo '<div class="updated"><p>Settings saved successfully. Please click Step 3: Finish Setup to continue</p></div>';
-    } elseif ( isset( $_POST[ 'wp_gitdeploy_finish_setup_nonce' ] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wp_gitdeploy_finish_setup_nonce'] ) ), 'wp_gitdeploy_finish_setup' ) ) {
-        $wp_gitdeploy_creds = get_option( 'wp_gitdeploy_creds', array( 'wp_gitdeploy_username' => '', 'wp_gitdeploy_token' => '', 'wp_gitdeploy_repo' => '', 'wp_gitdeploy_repo_branch' => '' ) );
+    } elseif ( isset( $_POST[ 'mrs_gitdeploy_finish_setup_nonce' ] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mrs_gitdeploy_finish_setup_nonce'] ) ), 'mrs_gitdeploy_finish_setup' ) ) {
+        $mrs_gitdeploy_creds = get_option( 'mrs_gitdeploy_creds', array( 'mrs_gitdeploy_username' => '', 'mrs_gitdeploy_token' => '', 'mrs_gitdeploy_repo' => '', 'mrs_gitdeploy_repo_branch' => '' ) );
         
         // Update setup completion option
         $finish_setup_disabled = ! (
-            $wp_gitdeploy_creds[ 'wp_gitdeploy_username' ] &&
-            $wp_gitdeploy_creds[ 'wp_gitdeploy_token' ] &&
-            $wp_gitdeploy_creds[ 'wp_gitdeploy_repo' ]
+            $mrs_gitdeploy_creds[ 'mrs_gitdeploy_username' ] &&
+            $mrs_gitdeploy_creds[ 'mrs_gitdeploy_token' ] &&
+            $mrs_gitdeploy_creds[ 'mrs_gitdeploy_repo' ]
         );
 
-        $settings_have_errors = get_option( 'wp_gitdeploy_creds_error' );
+        $settings_have_errors = get_option( 'mrs_gitdeploy_creds_error' );
 
         if ( $finish_setup_disabled || 1 == $settings_have_errors ) {
-            update_option('wp_gitdeploy_setup_complete', 0);
-            $setup_error = '<div class="error"><p>' . __( "Please enter correct credentials in Step 1, and Save Settings first!", "wp-gitdeploy" ) . '</p></div>';
+            update_option('mrs_gitdeploy_setup_complete', 0);
+            $setup_error = '<div class="error"><p>' . __( "Please enter correct credentials in Step 1, and Save Settings first!", "mrs-gitdeploy" ) . '</p></div>';
             echo $setup_error;
         } else {
-            $workflow_file_setup = wp_gitdeploy_process_workflow_file();
+            $workflow_file_setup = mrs_gitdeploy_process_workflow_file();
 
-            if ( true === wp_gitdeploy_process_workflow_file() ) {
+            if ( true === mrs_gitdeploy_process_workflow_file() ) {
                 // Successfully created/updated workflow file.
-                update_option('wp_gitdeploy_setup_complete', 1);
-                update_option('wp_gitdeploy_first_resync', 1);
-                echo '<div class="updated"><p>' . __('Setup has been completed! Thank you!', 'wp-gitdeploy') . '</p></div>';
+                update_option('mrs_gitdeploy_setup_complete', 1);
+                update_option('mrs_gitdeploy_first_resync', 1);
+                echo '<div class="updated"><p>' . __('Setup has been completed! Thank you!', 'mrs-gitdeploy') . '</p></div>';
             } elseif ( 'missing_creds' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'Please enter correct credentials in Step 1, and Save Settings first!', 'wp-gitdeploy' ) . '</p></div>';
+                echo '<div class="error"><p>' . __( 'Please enter correct credentials in Step 1, and Save Settings first!', 'mrs-gitdeploy' ) . '</p></div>';
             } elseif ( 'file_not_found' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'The workflow template file does not exist. Kindly delete and reinstall the plugin', 'wp-gitdeploy') . '</p></div>';
+                echo '<div class="error"><p>' . __( 'The workflow template file does not exist. Kindly delete and reinstall the plugin', 'mrs-gitdeploy') . '</p></div>';
             } elseif ( 'file_read_error' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'Failed to read the workflow template file', 'wp-gitdeploy') . '</p></div>';
+                echo '<div class="error"><p>' . __( 'Failed to read the workflow template file', 'mrs-gitdeploy') . '</p></div>';
             } elseif ( 'api_request_failed' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'Failed to communicate with GitHub API', 'wp-gitdeploy') . '</p></div>';
+                echo '<div class="error"><p>' . __( 'Failed to communicate with GitHub API', 'mrs-gitdeploy') . '</p></div>';
             } elseif ( 'api_request_failed_2' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'Failed to communicate with GitHub API to update the workflow file', 'wp-gitdeploy') . '</p></div>';
+                echo '<div class="error"><p>' . __( 'Failed to communicate with GitHub API to update the workflow file', 'mrs-gitdeploy') . '</p></div>';
             } elseif ( 'api_request_failed_3' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'Connection with GitHub API caused an unexpected error, please re-check your Credentials, Repo and Branch in Step 1.', 'wp-gitdeploy') . '</p></div>';
+                echo '<div class="error"><p>' . __( 'Connection with GitHub API caused an unexpected error, please re-check your Credentials, Repo and Branch in Step 1.', 'mrs-gitdeploy') . '</p></div>';
             } elseif ( 'api_rate_limit_exceeded' === $workflow_file_setup ) {
-                echo '<div class="error"><p>' . __( 'GitHub API rate of your account has exceeded it\'s limit, kindly wait one hour for the rate limit to reset.', 'wp-gitdeploy') . '</p></div>';
+                echo '<div class="error"><p>' . __( 'GitHub API rate of your account has exceeded it\'s limit, kindly wait one hour for the rate limit to reset.', 'mrs-gitdeploy') . '</p></div>';
             }
         }
     } else {
@@ -79,127 +79,127 @@ if ( ! empty( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'PO
     }
 }
 // Setup Done?
-$setup_done = get_option( 'wp_gitdeploy_setup_complete' );
+$setup_done = get_option( 'mrs_gitdeploy_setup_complete' );
 // Get creds array
-$creds = get_option( 'wp_gitdeploy_creds', array( 'wp_gitdeploy_username' => '', 'wp_gitdeploy_token' => '', 'wp_gitdeploy_repo' => '', 'wp_gitdeploy_repo_branch' => '' ) );
+$creds = get_option( 'mrs_gitdeploy_creds', array( 'mrs_gitdeploy_username' => '', 'mrs_gitdeploy_token' => '', 'mrs_gitdeploy_repo' => '', 'mrs_gitdeploy_repo_branch' => '' ) );
 // Check if the Finish Setup button should be disabled
 $finish_setup_disabled = ! (
-    $creds[ 'wp_gitdeploy_username' ] &&
-    $creds[ 'wp_gitdeploy_token' ] &&
-    $creds[ 'wp_gitdeploy_repo' ]
+    $creds[ 'mrs_gitdeploy_username' ] &&
+    $creds[ 'mrs_gitdeploy_token' ] &&
+    $creds[ 'mrs_gitdeploy_repo' ]
 );
 ?>
 
 <div class="wrap">
-    <h1><?php _e('WP GitDeploy Setup', 'wp-gitdeploy'); ?></h1>
-    <p><?php _e('Setup your WP GitDeploy from here.', 'wp-gitdeploy'); ?></p>
+    <h1><?php _e('GitDeploy Setup', 'mrs-gitdeploy'); ?></h1>
+    <p><?php _e('Setup your GitDeploy from here.', 'mrs-gitdeploy'); ?></p>
 
     <!-- Setup Complete Message -->
     <?php if ( $setup_done ) { ?>
         <div class="setup-complete">
             <span class="dashicons dashicons-yes"></span>
-            <span><?php _e('Setup complete!', 'wp-gitdeploy'); ?></span>
+            <span><?php _e('Setup complete!', 'mrs-gitdeploy'); ?></span>
         </div>
     <?php } else { ?>
         <div class="setup-incomplete">
             <span class="dashicons dashicons-info"></span>
-            <span><?php _e('Setup not yet complete, please finish the Setup!', 'wp-gitdeploy'); ?></span>
+            <span><?php _e('Setup not yet complete, please finish the Setup!', 'mrs-gitdeploy'); ?></span>
         </div>
     <?php } ?>
         
-        <div class="wp-gitdeploy-setup-steps">
+        <div class="mrs-gitdeploy-setup-steps">
         <!-- <div class="step">
-            <h2><?php _e('Step 1: Download the ZIP of the Content Folder.', 'wp-gitdeploy'); ?></h2>
-            <p><?php _e('Click the button below to generate a ZIP file of your wp-content folder. The ZIP will include the following files and directories:', 'wp-gitdeploy'); ?></p>
+            <h2><?php _e('Step 1: Download the ZIP of the Content Folder.', 'mrs-gitdeploy'); ?></h2>
+            <p><?php _e('Click the button below to generate a ZIP file of your wp-content folder. The ZIP will include the following files and directories:', 'mrs-gitdeploy'); ?></p>
             
             <ul id="files-list">
-                <li><span class="tick">&#10003;</span> <?php _e('Plugins', 'wp-gitdeploy'); ?></li>
-                <li><span class="tick">&#10003;</span> <?php _e('MU-Plugins', 'wp-gitdeploy'); ?></li>
-                <li><span class="tick">&#10003;</span> <?php _e('Themes', 'wp-gitdeploy'); ?></li>
-                <li><span class="tick">&#10003;</span> <?php _e('Languages (/languages)', 'wp-gitdeploy'); ?></li>
-                <li><span class="tick">&#10003;</span> <?php _e('index.php', 'wp-gitdeploy'); ?></li>
-                <li><span class="cross">&#10007;</span> <?php _e('Uploads (excluded)', 'wp-gitdeploy'); ?></li>
-                <li><span class="cross">&#10007;</span> <?php _e('Cache (excluded)', 'wp-gitdeploy'); ?></li>
+                <li><span class="tick">&#10003;</span> <?php _e('Plugins', 'mrs-gitdeploy'); ?></li>
+                <li><span class="tick">&#10003;</span> <?php _e('MU-Plugins', 'mrs-gitdeploy'); ?></li>
+                <li><span class="tick">&#10003;</span> <?php _e('Themes', 'mrs-gitdeploy'); ?></li>
+                <li><span class="tick">&#10003;</span> <?php _e('Languages (/languages)', 'mrs-gitdeploy'); ?></li>
+                <li><span class="tick">&#10003;</span> <?php _e('index.php', 'mrs-gitdeploy'); ?></li>
+                <li><span class="cross">&#10007;</span> <?php _e('Uploads (excluded)', 'mrs-gitdeploy'); ?></li>
+                <li><span class="cross">&#10007;</span> <?php _e('Cache (excluded)', 'mrs-gitdeploy'); ?></li>
             </ul>
 
-            <button id="generate-zip-btn" class="button button-primary"><?php _e('Generate', 'wp-gitdeploy'); ?></button>
-            <div id="loading-indicator" style="display:none;"><?php _e('Generating... Please wait.', 'wp-gitdeploy'); ?></div>
+            <button id="generate-zip-btn" class="button button-primary"><?php _e('Generate', 'mrs-gitdeploy'); ?></button>
+            <div id="loading-indicator" style="display:none;"><?php _e('Generating... Please wait.', 'mrs-gitdeploy'); ?></div>
             <div id="download-link" style="display:none;"></div>
         </div> -->
 
         <form method="post" action="">
         <!-- Nonce for settings form -->
-        <?php wp_nonce_field('wp_gitdeploy_save_settings', 'wp_gitdeploy_save_settings_nonce'); ?>
+        <?php wp_nonce_field('mrs_gitdeploy_save_settings', 'mrs_gitdeploy_save_settings_nonce'); ?>
 
             <div class="step">
-                <h2><?php _e('Step 1: Enter GitHub Credentials', 'wp-gitdeploy'); ?></h2>
+                <h2><?php _e('Step 1: Enter GitHub Credentials', 'mrs-gitdeploy'); ?></h2>
                 <table class="form-table">
                     <tr>
                         <th scope="row">
-                            <label for="wp_gitdeploy_token"><?php _e('GitHub token', 'wp-gitdeploy'); ?><i class="fa fa-asterisk" style="font-size: 8px; color:red; vertical-align: super;"></i></label>
+                            <label for="mrs_gitdeploy_token"><?php _e('GitHub token', 'mrs-gitdeploy'); ?><i class="fa fa-asterisk" style="font-size: 8px; color:red; vertical-align: super;"></i></label>
                         </th>
                         <td>
-                            <input name="wp_gitdeploy_token" type="text" id="wp_gitdeploy_token" placeholder="********" value="<?php echo esc_textarea( $creds[ 'wp_gitdeploy_token' ] ); ?>" class="regular-text" required>
+                            <input name="mrs_gitdeploy_token" type="text" id="mrs_gitdeploy_token" placeholder="********" value="<?php echo esc_textarea( $creds[ 'mrs_gitdeploy_token' ] ); ?>" class="regular-text" required>
                             &nbsp;
                             <a href="#" onclick="changeTokenPlaceholderText(); window.open('https://ravlet.agency/product/gitdeploy-auth/', 'WP Pusher Authentication', 'height=800,width=1100'); return false;" class="button">
-                                <i class="fa fa-github"></i>&nbsp; <?php _e('Obtain a GitHub token', 'wp-gitdeploy'); ?>
+                                <i class="fa fa-github"></i>&nbsp; <?php _e('Obtain a GitHub token', 'mrs-gitdeploy'); ?>
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="wp_gitdeploy_username"><?php _e('GitHub Username', 'wp-gitdeploy'); ?></label><i class="fa fa-asterisk" style="font-size: 8px; color:red; vertical-align: super;"></i>
+                            <label for="mrs_gitdeploy_username"><?php _e('GitHub Username', 'mrs-gitdeploy'); ?></label><i class="fa fa-asterisk" style="font-size: 8px; color:red; vertical-align: super;"></i>
                         </th>
                         <td>
-                            <input name="wp_gitdeploy_username" type="text" id="wp_gitdeploy_username" value="<?php echo esc_attr( $creds[ 'wp_gitdeploy_username' ] ); ?>" class="regular-text" required>
+                            <input name="mrs_gitdeploy_username" type="text" id="mrs_gitdeploy_username" value="<?php echo esc_attr( $creds[ 'mrs_gitdeploy_username' ] ); ?>" class="regular-text" required>
                             <p class="description">
-                                <?php _e('Enter the username of the GitHub repository in the format', 'wp-gitdeploy'); ?> <code><?php _e('username', 'wp-gitdeploy'); ?></code> <?php _e('excluding the', 'wp-gitdeploy'); ?> <code><?php _e('repo-name/', 'wp-gitdeploy'); ?></code>.
-                                <br><?php _e('If your repo URL is like', 'wp-gitdeploy'); ?> <code>https://github.com/yourusername/myawesomerepo</code> <?php _e('only enter', 'wp-gitdeploy'); ?> <code><?php _e('yourusername', 'wp-gitdeploy'); ?></code>.
+                                <?php _e('Enter the username of the GitHub repository in the format', 'mrs-gitdeploy'); ?> <code><?php _e('username', 'mrs-gitdeploy'); ?></code> <?php _e('excluding the', 'mrs-gitdeploy'); ?> <code><?php _e('repo-name/', 'mrs-gitdeploy'); ?></code>.
+                                <br><?php _e('If your repo URL is like', 'mrs-gitdeploy'); ?> <code>https://github.com/yourusername/myawesomerepo</code> <?php _e('only enter', 'mrs-gitdeploy'); ?> <code><?php _e('yourusername', 'mrs-gitdeploy'); ?></code>.
                             </p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="wp_gitdeploy_repo"><?php _e('GitHub Repository', 'wp-gitdeploy'); ?></label><i class="fa fa-asterisk" style="font-size: 8px; color:red; vertical-align: super;"></i>
+                            <label for="mrs_gitdeploy_repo"><?php _e('GitHub Repository', 'mrs-gitdeploy'); ?></label><i class="fa fa-asterisk" style="font-size: 8px; color:red; vertical-align: super;"></i>
                         </th>
                         <td>
-                            <input name="wp_gitdeploy_repo" type="text" id="wp_gitdeploy_repo" value="<?php echo esc_attr( $creds[ 'wp_gitdeploy_repo' ] ); ?>" class="regular-text" required>
+                            <input name="mrs_gitdeploy_repo" type="text" id="mrs_gitdeploy_repo" value="<?php echo esc_attr( $creds[ 'mrs_gitdeploy_repo' ] ); ?>" class="regular-text" required>
                             <p class="description">
-                                <?php _e('Enter the full name of the GitHub repository in the format', 'wp-gitdeploy'); ?> <code><?php _e('repo-name', 'wp-gitdeploy'); ?></code> <?php _e('excluding the', 'wp-gitdeploy'); ?> <code><?php _e('username/', 'wp-gitdeploy'); ?></code>.
-                                <br><?php _e('If your repo URL is like', 'wp-gitdeploy'); ?> <code>https://github.com/yourusername/myawesomerepo</code> <?php _e('only enter', 'wp-gitdeploy'); ?> <code><?php _e('myawesomerepo', 'wp-gitdeploy'); ?></code>.
+                                <?php _e('Enter the full name of the GitHub repository in the format', 'mrs-gitdeploy'); ?> <code><?php _e('repo-name', 'mrs-gitdeploy'); ?></code> <?php _e('excluding the', 'mrs-gitdeploy'); ?> <code><?php _e('username/', 'mrs-gitdeploy'); ?></code>.
+                                <br><?php _e('If your repo URL is like', 'mrs-gitdeploy'); ?> <code>https://github.com/yourusername/myawesomerepo</code> <?php _e('only enter', 'mrs-gitdeploy'); ?> <code><?php _e('myawesomerepo', 'mrs-gitdeploy'); ?></code>.
                             </p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="wp_gitdeploy_repo_branch"><?php _e('Branch', 'wp-gitdeploy'); ?></label>
+                            <label for="mrs_gitdeploy_repo_branch"><?php _e('Branch', 'mrs-gitdeploy'); ?></label>
                         </th>
                         <td>
-                            <input name="wp_gitdeploy_repo_branch" type="text" id="wp_gitdeploy_repo_branch" value="<?php echo esc_attr( $creds[ 'wp_gitdeploy_repo_branch' ] ); ?>" class="regular-text" placeholder="main">
+                            <input name="mrs_gitdeploy_repo_branch" type="text" id="mrs_gitdeploy_repo_branch" value="<?php echo esc_attr( $creds[ 'mrs_gitdeploy_repo_branch' ] ); ?>" class="regular-text" placeholder="main">
                             &nbsp;
                             <a id="test-repo-button" onclick="testGitHubRepo(); return false;" class="button" <?php echo $finish_setup_disabled ? 'disabled' : ''; ?>>
-                                <i class="fa fa-github"></i>&nbsp; <?php _e('Test if repo is working', 'wp-gitdeploy'); ?>
+                                <i class="fa fa-github"></i>&nbsp; <?php _e('Test if repo is working', 'mrs-gitdeploy'); ?>
                             </a>
                             <p class="description">
-                                <?php _e('Enter the branch name you want to connect with this site.', 'wp-gitdeploy'); ?>.
-                                <br><?php _e('Default: ', 'wp-gitdeploy'); ?> <code>main</code>.
+                                <?php _e('Enter the branch name you want to connect with this site.', 'mrs-gitdeploy'); ?>.
+                                <br><?php _e('Default: ', 'mrs-gitdeploy'); ?> <code>main</code>.
                             </p>
                         </td>
                     </tr>
                 </table>
-                <?php submit_button(__('Save Settings', 'wp-gitdeploy')); ?>
+                <?php submit_button(__('Save Settings', 'mrs-gitdeploy')); ?>
             </div>
         </div>
     </form>
 
     <form method="post" action="">
         <!-- Nonce for finish setup -->
-        <?php wp_nonce_field('wp_gitdeploy_finish_setup', 'wp_gitdeploy_finish_setup_nonce'); ?>
-        <div class="wp-gitdeploy-setup-steps">
+        <?php wp_nonce_field('mrs_gitdeploy_finish_setup', 'mrs_gitdeploy_finish_setup_nonce'); ?>
+        <div class="mrs-gitdeploy-setup-steps">
             <div class="step">
-                <h2><?php _e('Step 2: Finish Setup', 'wp-gitdeploy'); ?></h2>
-                <p><?php _e('After entering your GitHub credentials, please click \'Finish Setup\' to complete the setup.', 'wp-gitdeploy'); ?></p>                
-                <button type="submit" name="finish_setup" class="button button-primary" <?php echo $finish_setup_disabled ? 'disabled' : ''; ?>><?php _e('Finish Setup', 'wp-gitdeploy'); ?></button>
+                <h2><?php _e('Step 2: Finish Setup', 'mrs-gitdeploy'); ?></h2>
+                <p><?php _e('After entering your GitHub credentials, please click \'Finish Setup\' to complete the setup.', 'mrs-gitdeploy'); ?></p>                
+                <button type="submit" name="finish_setup" class="button button-primary" <?php echo $finish_setup_disabled ? 'disabled' : ''; ?>><?php _e('Finish Setup', 'mrs-gitdeploy'); ?></button>
             </div>
         </div>
     </form>

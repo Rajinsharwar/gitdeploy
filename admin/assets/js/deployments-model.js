@@ -1,5 +1,5 @@
 jQuery(document).ready(function($) {
-    $('.wp-gitdeploy-view-details').click(function(e) {
+    $('.mrs-gitdeploy-view-details').click(function(e) {
         e.preventDefault();
 
         var id = $(this).data('id');
@@ -7,14 +7,14 @@ jQuery(document).ready(function($) {
             url: wpGitDeployData.ajaxurl, // Use localized ajaxurl
             type: 'POST',
             data: {
-                action: 'wp_gitdeploy_get_deployment_details',
+                action: 'mrs_gitdeploy_get_deployment_details',
                 id: id,
                 security: wpGitDeployData.nonce // Include nonce in request
             },
             success: function(response) {
                 if (response.success) {
-                    $('#wp-gitdeploy-details-content').html(response.data);
-                    $('#wp-gitdeploy-details-modal').fadeIn(); // Smoothly show the modal
+                    $('#mrs-gitdeploy-details-content').html(response.data);
+                    $('#mrs-gitdeploy-details-modal').fadeIn(); // Smoothly show the modal
                 } else {
                     alert('Failed to fetch details.');
                 }
@@ -26,14 +26,14 @@ jQuery(document).ready(function($) {
     });
 
     // Close the modal when the close button is clicked
-    $('.wp-gitdeploy-close').click(function() {
-        $('#wp-gitdeploy-details-modal').fadeOut(); // Smoothly hide the modal
+    $('.mrs-gitdeploy-close').click(function() {
+        $('#mrs-gitdeploy-details-modal').fadeOut(); // Smoothly hide the modal
     });
 
     // Close the modal when clicking outside the modal content
     $(window).click(function(e) {
-        if ($(e.target).is('#wp-gitdeploy-details-modal')) {
-            $('#wp-gitdeploy-details-modal').fadeOut();
+        if ($(e.target).is('#mrs-gitdeploy-details-modal')) {
+            $('#mrs-gitdeploy-details-modal').fadeOut();
         }
     });
 });

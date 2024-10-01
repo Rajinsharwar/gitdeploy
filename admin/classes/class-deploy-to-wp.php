@@ -4,7 +4,7 @@
  * Main Class file for deploying from GitHub to WP.
  */
 
-class WP_GitDeploy_Pull_from_GitHub {
+class MRS_GitDeploy_Pull_from_GitHub {
     
     private $async_request;
 
@@ -42,7 +42,7 @@ class WP_GitDeploy_Pull_from_GitHub {
      * Dispatch the Async request.
      */
     public function trigger_async_request( $changed_files ) {
-        $async_request = new WP_GitDeploy_Async();
+        $async_request = new MRS_GitDeploy_Async();
         $async_request->data( array( 'changed_files' => $changed_files ) )->dispatch();
     }
 }

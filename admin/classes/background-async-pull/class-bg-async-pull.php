@@ -1,11 +1,11 @@
 <?php
 
-class WP_GitDeploy_Async extends WP_Async_Request {
+class MRS_GitDeploy_Async extends WP_Async_Request {
 
 	/**
 	 * @var string
 	 */
-	protected $action = 'wp_gitdeploy_pull';
+	protected $action = 'mrs_gitdeploy_pull';
 
     private $status;
 
@@ -20,28 +20,28 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 	 * during the async request.
 	 */
     protected function handle() {
-        if ( ! get_option( 'wp_gitdeploy_setup_complete' ) ) {
+        if ( ! get_option( 'mrs_gitdeploy_setup_complete' ) ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Setup of the plugin is not completed yet.', 'wp-gitdeploy' );
-            $deployment_log = new \WP_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, array() );
+            $this->reason = __( 'Setup of the plugin is not completed yet.', 'mrs-gitdeploy' );
+            $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, array() );
             return;
         }
 
 
-        $creds = get_option( 'wp_gitdeploy_creds', array() );
+        $creds = get_option( 'mrs_gitdeploy_creds', array() );
     
-        $username = $creds[ 'wp_gitdeploy_username' ] ?? '';
-        $token = $creds[ 'wp_gitdeploy_token' ] ?? '';
-        $repo = $creds[ 'wp_gitdeploy_repo' ] ?? '';
-        $branch = $creds[ 'wp_gitdeploy_repo_branch' ] ?? 'main';
+        $username = $creds[ 'mrs_gitdeploy_username' ] ?? '';
+        $token = $creds[ 'mrs_gitdeploy_token' ] ?? '';
+        $repo = $creds[ 'mrs_gitdeploy_repo' ] ?? '';
+        $branch = $creds[ 'mrs_gitdeploy_repo_branch' ] ?? 'main';
     
         if ( isset( $_POST['changed_files'] ) && is_array( $_POST['changed_files'] ) ) {
             $changed_files = wp_unslash( $_POST['changed_files'] );
             $changed_files = array_map( 'sanitize_text_field', $changed_files );
             
-            // Exclude 'plugins/wp-gitdeploy'
+            // Exclude 'plugins/mrs-gitdeploy'
             $filtered_files = array_filter( $changed_files, function( $file ) {
-                return strpos( $file, 'plugins/wp-gitdeploy' ) !== 0;
+                return strpos( $file, 'plugins/mrs-gitdeploy' ) !== 0;
             });
         } else {
             $filtered_files = [];
@@ -54,7 +54,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
         $this->reason = '';
 
         // Define the directory to store the downloaded ZIP file and extracted contents
-        $pull_dir = WP_GITDEPLOY_PULL_DIR;
+        $pull_dir = MRS_GITDEPLOY_PULL_DIR;
         if ( ! file_exists( $pull_dir ) ) {
             wp_mkdir_p( $pull_dir, 0755, true );
         }
@@ -81,11 +81,11 @@ class WP_GitDeploy_Async extends WP_Async_Request {
             }   
         } else {
             $this->status = 'Failed';
-            $this->reason = __( 'Failed to download the GitHub repository ZIP file.', 'wp-gitdeploy' );
+            $this->reason = __( 'Failed to download the GitHub repository ZIP file.', 'mrs-gitdeploy' );
         }
 
-        delete_option( 'wp_gitdeploy_deployment_in_progress' );
-        $deployment_log = new \WP_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, wp_json_encode( $changed_files ) );
+        delete_option( 'mrs_gitdeploy_deployment_in_progress' );
+        $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, wp_json_encode( $changed_files ) );
     }
 
     /**
@@ -166,7 +166,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
         if ( ! $subfolders ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Cannot find pathnames in Repo data.', 'wp-gitdeploy' );
+            $this->reason = __( 'Cannot find pathnames in Repo data.', 'mrs-gitdeploy' );
             return;
         }
 
@@ -202,7 +202,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
     
         if ( ! $wp_filesystem->is_dir( $source_dir ) ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Source directory does not exist.', 'wp-gitdeploy' );
+            $this->reason = __( 'Source directory does not exist.', 'mrs-gitdeploy' );
             return;
         }
     
@@ -210,7 +210,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
     
         if ( ! $files ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Couldn\'t scan Repo Data after downloading.', 'wp-gitdeploy' );
+            $this->reason = __( 'Couldn\'t scan Repo Data after downloading.', 'mrs-gitdeploy' );
             return;
         }
     
@@ -224,7 +224,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
     
             if ( ! $moved ) {
                 $this->status = 'Failed';
-                $this->reason = sprintf( __( 'Couldn\'t move file: %s to the target directory.', 'wp-gitdeploy' ), $file );
+                $this->reason = sprintf( __( 'Couldn\'t move file: %s to the target directory.', 'mrs-gitdeploy' ), $file );
                 return;
             }
         }
@@ -245,7 +245,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
         if ( ! $changed_files || count( $changed_files ) < 0 ) {
             $this->status = 'Failed';
-            $this->reason = __( 'No changed files found.', 'wp-gitdeploy' );
+            $this->reason = __( 'No changed files found.', 'mrs-gitdeploy' );
             return false;
         }
 
@@ -272,7 +272,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $mkdir ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'wp-gitdeploy' );
+                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'mrs-gitdeploy' );
                         return false;
                     }
                 }
@@ -282,7 +282,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
                 if ( ! $copy ) {
                     $this->status = 'Failed';
-                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'wp-gitdeploy' );
+                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'mrs-gitdeploy' );
                     return false;
                 }
             } else {
@@ -292,7 +292,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $unlink ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'wp-gitdeploy' );
+                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'mrs-gitdeploy' );
                         return false;
                     }
                 }
@@ -302,7 +302,7 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
     /**
      * Replace all files in the correct WordPress content directory (plugins, themes, mu-plugins),
-     * except the files under the 'plugins/wp-gitdeploy' directory.
+     * except the files under the 'plugins/mrs-gitdeploy' directory.
      *
      * @param string $extract_folder The directory where the ZIP contents are extracted.
      */
@@ -317,13 +317,13 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
         if ( ! $changed_files || count( $changed_files ) < 0 ) {
             $this->status = 'Failed';
-            $this->reason = __( 'No plugins, themes or mu-plugins found in the Github repo', 'wp-gitdeploy' );
-            delete_option( 'wp_gitdeploy_resync_in_progress' );
+            $this->reason = __( 'No plugins, themes or mu-plugins found in the Github repo', 'mrs-gitdeploy' );
+            delete_option( 'mrs_gitdeploy_resync_in_progress' );
             return false;
         }
 
         foreach ( $changed_files as $changed_file ) {
-            if ( strpos( $changed_file, 'plugins/' ) === 0 && strpos( $changed_file, 'plugins/wp-gitdeploy/' ) !== 0 ) {
+            if ( strpos( $changed_file, 'plugins/' ) === 0 && strpos( $changed_file, 'plugins/mrs-gitdeploy/' ) !== 0 ) {
                 $src_file = $extract_folder . $changed_file;
                 $dest_file = $plugin_dir . substr( $changed_file, strlen( 'plugins/' ) );
             } elseif ( strpos( $changed_file, 'themes/' ) === 0 ) {
@@ -342,8 +342,8 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $mkdir ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'wp-gitdeploy' );
-                        delete_option( 'wp_gitdeploy_resync_in_progress' );
+                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'mrs-gitdeploy' );
+                        delete_option( 'mrs_gitdeploy_resync_in_progress' );
                         return false;
                     }
                 }
@@ -353,8 +353,8 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
                 if ( ! $copy ) {
                     $this->status = 'Failed';
-                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'wp-gitdeploy' );
-                    delete_option( 'wp_gitdeploy_resync_in_progress' );
+                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'mrs-gitdeploy' );
+                    delete_option( 'mrs_gitdeploy_resync_in_progress' );
                     return false;
                 }
             } else {
@@ -364,15 +364,15 @@ class WP_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $unlink ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'wp-gitdeploy' );
-                        delete_option( 'wp_gitdeploy_resync_in_progress' );
+                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'mrs-gitdeploy' );
+                        delete_option( 'mrs_gitdeploy_resync_in_progress' );
                         return false;
                     }
                 }
             }
         }
 
-        delete_option( 'wp_gitdeploy_resync_in_progress' );
+        delete_option( 'mrs_gitdeploy_resync_in_progress' );
     }
 
     /**

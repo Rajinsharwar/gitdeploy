@@ -7,7 +7,7 @@ jQuery(document).ready(function($) {
             url: ajaxurl, 
             type: 'POST',
             data: {
-                action: 'wp_gitdeploy_generate_zip',
+                action: 'mrs_gitdeploy_generate_zip',
             },
             success: function(response) {
                 $('#loading-indicator').hide();

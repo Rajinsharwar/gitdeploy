@@ -43,10 +43,10 @@ jobs:
         run: |
           rm -f ${{ github.event.inputs.file_name }}
 
-      # Step 2: Remove wp-gitdeploy plugin
-      - name: Remove wp-gitdeploy
+      # Step 2: Remove mrs-gitdeploy plugin
+      - name: Remove mrs-gitdeploy
         run: |
-          rm -rf plugins/wp-gitdeploy
+          rm -rf plugins/mrs-gitdeploy
 
       # Step 7: Commit and push the extracted files, including removals
       - name: Commit changes
@@ -73,7 +73,7 @@ jobs:
           curl -X POST \
             -H "Content-Type: application/json" \
             -d '{"file_name": "${{ github.event.inputs.file_name }}", "action_id": "${{ github.run_id }}", "status": "${{ job.status }}"}' \
-            ${site_url}/wp-json/wp_gitdeploy/v1/push-completed
+            ${site_url}/wp-json/mrs_gitdeploy/v1/push-completed
           # Step 8: Cleanup step to remove any remaining files and directories
 
       # Cleanup

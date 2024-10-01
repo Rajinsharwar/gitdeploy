@@ -3,11 +3,11 @@ jQuery(document).ready(function($) {
         $('#resync-status').html('<p>Resyncing...</p>');
         
         $.ajax({
-            url: wp_gitdeploy_resync_ajax.ajax_url,
+            url: mrs_gitdeploy_resync_ajax.ajax_url,
             type: 'POST',
             data: {
-                action: 'wp_gitdeploy_resync',
-                nonce: wp_gitdeploy_resync_ajax.nonce
+                action: 'mrs_gitdeploy_resync',
+                nonce: mrs_gitdeploy_resync_ajax.nonce
             },
             success: function(response) {
                 // Check if the response has the success key

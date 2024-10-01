@@ -85,7 +85,7 @@
 }
 
 /* Modal Styling */
-.wp-gitdeploy-modal {
+.mrs-gitdeploy-modal {
     display: none;
     position: fixed;
     left: 0;
@@ -97,7 +97,7 @@
     z-index: 9999;
 }
 
-.wp-gitdeploy-modal-content {
+.mrs-gitdeploy-modal-content {
     background: #fff;
     margin: 5% auto;
     padding: 20px;
@@ -106,20 +106,20 @@
     max-width: 900px;
 }
 
-.wp-gitdeploy-close {
+.mrs-gitdeploy-close {
     color: #000;
     float: right;
     font-size: 28px;
     font-weight: bold;
 }
 
-.wp-gitdeploy-close:hover {
+.mrs-gitdeploy-close:hover {
     color: #ff0000;
     text-decoration: none;
     cursor: pointer;
 }
 
-.wp-gitdeploy-details-scroll {
+.mrs-gitdeploy-details-scroll {
     max-height: 400px;
     overflow-y: auto;
 }

@@ -2,18 +2,18 @@
 
 /** FUnctions file for all the functions of the admin side of the plugin */
 
-function wp_gitdeploy_generate_zip() {
-    $items_to_include = wp_gitdeploy_allowed_items();
+function mrs_gitdeploy_generate_zip() {
+    $items_to_include = mrs_gitdeploy_allowed_items();
 
     // Clear out existing ZIPs.
-    wp_gitdeploy_delete_zips();
+    mrs_gitdeploy_delete_zips();
 
     $zip = new ZipArchive();
-    $zip_file = WP_GITDEPLOY_UPLOAD_DIR . 'wp-content-' . time() . '.zip';
-    $zip_file_url = WP_GITDEPLOY_UPLOAD_URL . 'wp-content-' . time() . '.zip';
+    $zip_file = MRS_GITDEPLOY_UPLOAD_DIR . 'wp-content-' . time() . '.zip';
+    $zip_file_url = MRS_GITDEPLOY_UPLOAD_URL . 'wp-content-' . time() . '.zip';
 
-    if ( ! is_dir( WP_GITDEPLOY_UPLOAD_DIR ) ) {
-        wp_mkdir_p( WP_GITDEPLOY_UPLOAD_DIR );
+    if ( ! is_dir( MRS_GITDEPLOY_UPLOAD_DIR ) ) {
+        wp_mkdir_p( MRS_GITDEPLOY_UPLOAD_DIR );
     }
 
     if ($zip->open($zip_file, ZipArchive::CREATE) === TRUE) {
@@ -30,7 +30,7 @@ function wp_gitdeploy_generate_zip() {
                     if (!$file->isDir()) {
                         $file_path = $file->getRealPath();
                         $relative_path = substr($file_path, strlen($wp_content_dir) + 1);
-                        if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                        if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/mrs-gitdeploy' ) ) {
                             $zip->addFile($file_path, $relative_path);
                         }
                     }
@@ -38,7 +38,7 @@ function wp_gitdeploy_generate_zip() {
             } elseif (is_file($full_path)) {
                 // Add the individual file to the ZIP file
                 $relative_path = substr($full_path, strlen($wp_content_dir) + 1);
-                if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/mrs-gitdeploy' ) ) {
                     $zip->addFile($full_path, $relative_path);
                 }
             }
@@ -47,8 +47,8 @@ function wp_gitdeploy_generate_zip() {
         $zip->close();
 
         // UnScheudle and Schedule cron to delete the ZIPs after 10 hours.
-        wp_unschedule_hook( 'wp_gitdeploy_delete_zip_cron' );
-        wp_schedule_single_event( time() + 36000, 'wp_gitdeploy_delete_zip_cron', array() );
+        wp_unschedule_hook( 'mrs_gitdeploy_delete_zip_cron' );
+        wp_schedule_single_event( time() + 36000, 'mrs_gitdeploy_delete_zip_cron', array() );
 
         // Send JSON success.
         wp_send_json_success(['zip_url' => $zip_file_url ]);
@@ -62,7 +62,7 @@ function wp_gitdeploy_generate_zip() {
  * 
  * @since 1.0
  */
-function wp_gitdeploy_allowed_items() {
+function mrs_gitdeploy_allowed_items() {
     $items_to_include = [
         'languages',
         'mu-plugins',
@@ -79,7 +79,7 @@ function wp_gitdeploy_allowed_items() {
  * 
  * @since 1.0
  */
-function wp_gitdeploy_delete_zips() {
+function mrs_gitdeploy_delete_zips() {
     global $wp_filesystem;
     
     if ( ! function_exists( 'WP_Filesystem' ) ) {
@@ -87,7 +87,7 @@ function wp_gitdeploy_delete_zips() {
     }
     WP_Filesystem();
 
-    $dir = WP_GITDEPLOY_UPLOAD_DIR;
+    $dir = MRS_GITDEPLOY_UPLOAD_DIR;
 
     // Check if the directory exists
     if ( is_dir( $dir ) ) {
@@ -112,24 +112,24 @@ function wp_gitdeploy_delete_zips() {
  * 
  * @since 1.0
  */
-function wp_gitdeploy_finish_setup() {
-    $creds = get_option( 'wp_gitdeploy_creds', array() );
+function mrs_gitdeploy_finish_setup() {
+    $creds = get_option( 'mrs_gitdeploy_creds', array() );
 
-    $username = $creds[ 'wp_gitdeploy_username' ] ?? '';
-    $gh_token = $creds[ 'wp_gitdeploy_token' ] ?? '';
-    $repo_name = $creds[ 'wp_gitdeploy_repo' ] ?? '';
+    $username = $creds[ 'mrs_gitdeploy_username' ] ?? '';
+    $gh_token = $creds[ 'mrs_gitdeploy_token' ] ?? '';
+    $repo_name = $creds[ 'mrs_gitdeploy_repo' ] ?? '';
 
     if ( ! $username || ! $gh_token || ! $repo_name ) {
-        return __('Couldn\'t complete Setup. Required Credentials are missing. Please re-save the settings from Step 2', 'wp-gitdeploy');
+        return __('Couldn\'t complete Setup. Required Credentials are missing. Please re-save the settings from Step 2', 'mrs-gitdeploy');
     }
 
     // GitHub API endpoint to create a webhook
     $api_url = "https://api.github.com/repos/$username/$repo_name/hooks";
 
-    $secret = wp_gitdeploy_create_github_secret( $username, $repo_name );
+    $secret = mrs_gitdeploy_create_github_secret( $username, $repo_name );
     // Webhook configuration
     $webhook_config = array(
-        'url' => home_url('/wp-json/wp_gitdeploy/v1/webhook'),
+        'url' => home_url('/wp-json/mrs_gitdeploy/v1/webhook'),
         'content_type' => 'json',
         'secret' => $secret
     );
@@ -159,7 +159,7 @@ function wp_gitdeploy_finish_setup() {
     // Check for errors
     if ( is_wp_error( $response ) ) {
         return sprintf(
-            __('Error setting up GitHub webhook: %s', 'wp-gitdeploy'),
+            __('Error setting up GitHub webhook: %s', 'mrs-gitdeploy'),
             $response->get_error_message()
         );
     }
@@ -181,7 +181,7 @@ function wp_gitdeploy_finish_setup() {
     }
 
     if ( isset( $response_data[ 'id' ] ) ) {
-        $workflow_response = wp_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token );
+        $workflow_response = mrs_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token );
 
         if ( 'could_not_change_workflow_setting' === $workflow_response ) {
             return __( 'Couldn\'t modify Workflow permissions for your repository. Maybe your organization is preventing it?' );
@@ -193,7 +193,7 @@ function wp_gitdeploy_finish_setup() {
     } else {
         // Webhook creation failed
         return sprintf(
-            __('Failed to create GitHub webhook. Error: %s', 'wp-gitdeploy'),
+            __('Failed to create GitHub webhook. Error: %s', 'mrs-gitdeploy'),
             $response_data[ 'message' ]
         );
     }
@@ -202,7 +202,7 @@ function wp_gitdeploy_finish_setup() {
 /**
  * Function to set the workflow permissions for the repo to write.
  */
-function wp_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token ) {
+function mrs_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token ) {
     // GitHub API endpoint to create a webhook
     $api_url = "https://api.github.com/repos/$username/$repo_name/actions/permissions/workflow";
 
@@ -242,8 +242,8 @@ function wp_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token
  * 
  * @since 1.0
  */
-function wp_gitdeploy_disable_wp_management() {
-    if ( ! get_option( 'wp_gitdeploy_disable_wp_management', false ) ) {
+function mrs_gitdeploy_disable_wp_management() {
+    if ( ! get_option( 'mrs_gitdeploy_disable_wp_management', false ) ) {
         return;
     }
     define('DISALLOW_FILE_MODS',true);
@@ -255,7 +255,7 @@ function wp_gitdeploy_disable_wp_management() {
  * @param string $username Username
  * @param string $repo_name Repo Name
  */
-function wp_gitdeploy_create_github_secret( $username, $repo_name ) {
+function mrs_gitdeploy_create_github_secret( $username, $repo_name ) {
     return hash('sha256', $username . $repo_name);
 }
 
@@ -267,11 +267,11 @@ function wp_gitdeploy_create_github_secret( $username, $repo_name ) {
  * @param string $secret The secret key used to set up the webhook.
  * @return bool True if the signature is valid, false otherwise.
  */
-function wp_gitdeploy_verify_github_signature( $request, $signature ) {
+function mrs_gitdeploy_verify_github_signature( $request, $signature ) {
     $raw_payload = $request->get_body();
-	$creds = get_option( 'wp_gitdeploy_creds', array() );
-	$username = $creds[ 'wp_gitdeploy_username' ] ?? '';
-	$repo_name = $creds[ 'wp_gitdeploy_repo' ] ?? '';
+	$creds = get_option( 'mrs_gitdeploy_creds', array() );
+	$username = $creds[ 'mrs_gitdeploy_username' ] ?? '';
+	$repo_name = $creds[ 'mrs_gitdeploy_repo' ] ?? '';
 	$secret = hash('sha256', $username . $repo_name);
 
 	// Validate the signature
@@ -287,15 +287,15 @@ function wp_gitdeploy_verify_github_signature( $request, $signature ) {
 /**
  * Send Deployment details via AJX
  */
-function wp_gitdeploy_get_deployment_details() {
-    check_ajax_referer('wp_gitdeploy_deployments_view_nonce', 'security');
+function mrs_gitdeploy_get_deployment_details() {
+    check_ajax_referer('mrs_gitdeploy_deployments_view_nonce', 'security');
 
     global $wpdb;
     $id = isset( $_POST['id'] ) ? intval( sanitize_text_field( wp_unslash( $_POST['id'] ) ) ) : 0;
 
     $deployment = $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}wp_gitdeploy_deployments WHERE id = %d",
+            "SELECT * FROM {$wpdb->prefix}mrs_gitdeploy_deployments WHERE id = %d",
             $id
         )
     );    
@@ -330,14 +330,14 @@ function wp_gitdeploy_get_deployment_details() {
 /**
  * Ajax handler for Resync Action
  */
-function wp_gitdeploy_resync_action() {
+function mrs_gitdeploy_resync_action() {
     // Check nonce for security
-    check_ajax_referer('wp_gitdeploy_resync_nonce', 'nonce');
+    check_ajax_referer('mrs_gitdeploy_resync_nonce', 'nonce');
 
-    if ( ! get_option( 'wp_gitdeploy_setup_complete' ) ) {
+    if ( ! get_option( 'mrs_gitdeploy_setup_complete' ) ) {
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">Setup not completed yet!</b> <br> Complete the <u><a href="' . esc_url( admin_url( 'admin.php?page=wp_gitdeploy_setup' ) ) . '" style="color: blue;">Setup</a></u> first.</p>', 'wp-gitdeploy'),
+                __('<p><b style="color: red;">Setup not completed yet!</b> <br> Complete the <u><a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_setup' ) ) . '" style="color: blue;">Setup</a></u> first.</p>', 'mrs-gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -355,10 +355,10 @@ function wp_gitdeploy_resync_action() {
     }    
 
     // Bail out for already running sync
-    if ( 'yes' === get_option( 'wp_gitdeploy_resync_in_progress' ) ) {
+    if ( 'yes' === get_option( 'mrs_gitdeploy_resync_in_progress' ) ) {
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">One Resync action is already running!</b> <br> Check the <u>Actions</u> tab in your GitHub respository for the latest workflow progress.</p>', 'wp-gitdeploy'),
+                __('<p><b style="color: red;">One Resync action is already running!</b> <br> Check the <u>Actions</u> tab in your GitHub respository for the latest workflow progress.</p>', 'mrs-gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -375,14 +375,14 @@ function wp_gitdeploy_resync_action() {
         ));
     }
 
-    $items_to_include = wp_gitdeploy_allowed_items();
+    $items_to_include = mrs_gitdeploy_allowed_items();
 
     $zip = new ZipArchive();
-    $zip_file = WP_GITDEPLOY_RESYNC_DIR . 'wp-content-' . time() . '.zip';
-    $zip_file_url = WP_GITDEPLOY_RESYNC_URL . 'wp-content-' . time() . '.zip';
+    $zip_file = MRS_GITDEPLOY_RESYNC_DIR . 'wp-content-' . time() . '.zip';
+    $zip_file_url = MRS_GITDEPLOY_RESYNC_URL . 'wp-content-' . time() . '.zip';
 
-    if ( ! is_dir( WP_GITDEPLOY_RESYNC_DIR ) ) {
-        wp_mkdir_p( WP_GITDEPLOY_RESYNC_DIR );
+    if ( ! is_dir( MRS_GITDEPLOY_RESYNC_DIR ) ) {
+        wp_mkdir_p( MRS_GITDEPLOY_RESYNC_DIR );
     }
 
     if ($zip->open($zip_file, ZipArchive::CREATE) === TRUE) {
@@ -399,7 +399,7 @@ function wp_gitdeploy_resync_action() {
                     if (!$file->isDir()) {
                         $file_path = $file->getRealPath();
                         $relative_path = substr($file_path, strlen($wp_content_dir) + 1);
-                        if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                        if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/mrs-gitdeploy' ) ) {
                             $zip->addFile($file_path, $relative_path);
                         }
                     }
@@ -407,7 +407,7 @@ function wp_gitdeploy_resync_action() {
             } elseif (is_file($full_path)) {
                 // Add the individual file to the ZIP file
                 $relative_path = substr($full_path, strlen($wp_content_dir) + 1);
-                if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/wp-gitdeploy' ) ) {
+                if ( false === strpos( wp_normalize_path( $relative_path ), 'plugins/mrs-gitdeploy' ) ) {
                     $zip->addFile($full_path, $relative_path);
                 }
             }
@@ -417,13 +417,13 @@ function wp_gitdeploy_resync_action() {
     }
 
     //Instantiate the class and run the resync
-    $resync = new WP_GitDeploy_Resync( $zip_file_url, $zip_file );
+    $resync = new MRS_GitDeploy_Resync( $zip_file_url, $zip_file );
     $result = $resync->sync();
     if ( true === $result ) {
         // Return success response
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b> Resync request sent!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=wp_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for status.</p>', 'wp-gitdeploy'),
+                __('<p><b> Resync request sent!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for status.</p>', 'mrs-gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -441,7 +441,7 @@ function wp_gitdeploy_resync_action() {
     } else {
         wp_send_json_error(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">Failed to resync!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=wp_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for info.</p>', 'wp-gitdeploy'),
+                __('<p><b style="color: red;">Failed to resync!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for info.</p>', 'mrs-gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -468,12 +468,12 @@ function wp_gitdeploy_resync_action() {
  * @param int $run_id GitHub Actions run ID.
  * @return bool True if the workflow run is currently running, false otherwise.
  */
-function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
-    $creds = get_option( 'wp_gitdeploy_creds', array() );
-    $token = $creds['wp_gitdeploy_token'] ?? '';
-    $repo = $creds['wp_gitdeploy_repo'] ?? '';
-    $username = $creds['wp_gitdeploy_username'] ?? '';
-    $branch = $creds['wp_gitdeploy_repo_branch'] ?? 'main';
+function mrs_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
+    $creds = get_option( 'mrs_gitdeploy_creds', array() );
+    $token = $creds['mrs_gitdeploy_token'] ?? '';
+    $repo = $creds['mrs_gitdeploy_repo'] ?? '';
+    $username = $creds['mrs_gitdeploy_username'] ?? '';
+    $branch = $creds['mrs_gitdeploy_repo_branch'] ?? 'main';
 
     $api_url = "https://api.github.com/repos/$username/$repo/actions/runs/$run_id";
 
@@ -504,11 +504,11 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
     if ( $response_code === 403 ) {
         if ( isset( $response_data['message'] ) && strpos( $response_data['message'], 'API rate limit exceeded') !== false ) {
             $status = 'Failed';
-            $deployment_log = new WP_GitDeploy_Deployments(
+            $deployment_log = new MRS_GitDeploy_Deployments(
                 $status, 
-                __( 'WP -> GitHub', 'wp-gitdeploy' ), 
+                __( 'WP -> GitHub', 'mrs-gitdeploy' ), 
                 sprintf(
-                    __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'wp-gitdeploy' ),
+                    __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'mrs-gitdeploy' ),
                     $limit_cap,
                     $rate_used,
                     $human_readable_time
@@ -517,7 +517,7 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
             if ( file_exists( $zip_file ) ) {
                 wp_delete_file( $zip_file );
             }
-            update_option( 'wp_gitdeploy_resync_in_progress', false, false );
+            update_option( 'mrs_gitdeploy_resync_in_progress', false, false );
             return false;
         }
     }
@@ -525,10 +525,10 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
     if ( is_wp_error( $response ) ) {
         $status = 'Failed';
         $error_string = $response->get_error_message();
-        $deployment_log = new WP_GitDeploy_Deployments( $status, 
+        $deployment_log = new MRS_GitDeploy_Deployments( $status, 
             __( 'WP -> GitHub' ),
             sprintf(
-                __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'wp-gitdeploy' ),
+                __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'mrs-gitdeploy' ),
                 $error_string,
                 $limit_cap,
                 $rate_used,
@@ -538,7 +538,7 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
         if ( file_exists( $zip_file ) ) {
             wp_delete_file( $zip_file );
         }
-        update_option( 'wp_gitdeploy_resync_in_progress', false, false );
+        update_option( 'mrs_gitdeploy_resync_in_progress', false, false );
         return false;
     }
 
@@ -557,13 +557,13 @@ function wp_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
 /**
  * Function to create and update the workflow file after the setup is done.
  */
-function wp_gitdeploy_process_workflow_file() {
-    $creds = get_option( 'wp_gitdeploy_creds', array() );
+function mrs_gitdeploy_process_workflow_file() {
+    $creds = get_option( 'mrs_gitdeploy_creds', array() );
 
-    $username = $creds['wp_gitdeploy_username'] ?? '';
-    $gh_token = $creds['wp_gitdeploy_token'] ?? '';
-    $repo_name = $creds['wp_gitdeploy_repo'] ?? '';
-    $branch = $creds['wp_gitdeploy_repo_branch'] ?? 'main';
+    $username = $creds['mrs_gitdeploy_username'] ?? '';
+    $gh_token = $creds['mrs_gitdeploy_token'] ?? '';
+    $repo_name = $creds['mrs_gitdeploy_repo'] ?? '';
+    $branch = $creds['mrs_gitdeploy_repo_branch'] ?? 'main';
 
     // Ensure credentials are set
     if ( empty( $username ) || empty( $gh_token ) || empty( $repo_name ) ) {
@@ -571,7 +571,7 @@ function wp_gitdeploy_process_workflow_file() {
     }
 
     // Path to the template file and destination workflow file
-    $template_file = WP_GITDEPLOY_PLUGIN_PATH . 'admin/inc/files/pull-from-wp.yml';
+    $template_file = MRS_GITDEPLOY_PLUGIN_PATH . 'admin/inc/files/pull-from-wp.yml';
     $workflow_file = '.github/workflows/pull-from-wp.yml';
 
     // Check if the template file exists
@@ -643,8 +643,8 @@ function wp_gitdeploy_process_workflow_file() {
 }
 
 // Your PHP function that handles the resync
-function wp_gitdeploy_resync_all_files_from_github_repo() {
-    update_option( 'wp_gitdeploy_resync_in_progress', 'yes' );
+function mrs_gitdeploy_resync_all_files_from_github_repo() {
+    update_option( 'mrs_gitdeploy_resync_in_progress', 'yes' );
     $payload = [
         'commits' => [
             [
@@ -652,5 +652,5 @@ function wp_gitdeploy_resync_all_files_from_github_repo() {
             ]
         ]
     ];
-    $process = new WP_GitDeploy_Pull_from_GitHub( $payload );
+    $process = new MRS_GitDeploy_Pull_from_GitHub( $payload );
 }
