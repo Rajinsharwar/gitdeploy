@@ -30,7 +30,7 @@ function mrs_gitdeploy_handle_webhook(WP_REST_Request $request) {
     $payload = $request->get_json_params();
 
     // No need to Push when Pull event is runned from GH actions.
-    if ( isset( $payload[ 'head_commit' ][ 'message' ] ) && str_contains( $payload[ 'head_commit' ][ 'message' ], '[skip ci]' ) ) {
+    if ( isset( $payload[ 'head_commit' ][ 'message' ] ) && str_contains( $payload[ 'head_commit' ][ 'message' ], '[skip gitdeploy]' ) ) {
         return new WP_REST_Response('Webhook not processed', 200);
     }
 

@@ -58,7 +58,7 @@ jobs:
           if git diff-index --quiet HEAD; then
             echo "No changes to commit. Everything is up to date."
           else
-            git commit -m "Update from WordPress ${{ github.event.inputs.file_name }} [skip ci]"
+            git commit -m "Update from WordPress ${{ github.event.inputs.file_name }} [skip gitdeploy]"
             git push
           fi
           

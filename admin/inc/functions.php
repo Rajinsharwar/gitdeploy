@@ -612,7 +612,7 @@ function mrs_gitdeploy_process_workflow_file() {
 
     // Prepare the payload for creating/updating the file
     $data = [
-        'message'   => 'Add or update workflow file [skip-ci]',
+        'message'   => 'Add or update workflow file [skip gitdeploy]',
         'content'   => base64_encode( $file_contents ),
         'branch'    => $branch,
     ];
