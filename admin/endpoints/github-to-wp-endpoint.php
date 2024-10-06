@@ -34,9 +34,20 @@ function mrs_gitdeploy_handle_webhook(WP_REST_Request $request) {
         return new WP_REST_Response('Webhook not processed', 200);
     }
 
+    $payload = array_intersect_key( $payload, [ 'commits' => '' ] );
+
     // Process
-    update_option( 'mrs_gitdeploy_deployment_in_progress', 'yes' );
-    $process = new MRS_GitDeploy_Pull_from_GitHub($payload);
+    // check if a deployment is still in progress
+    $status = get_option( 'mrs_gitdeploy_deployment_in_progress' );
+
+    if ( 'yes' === $status ) {
+        $waiting_deployments = get_option( 'mrs_gitdeploy_waiting_deployments', array() );
+        $waiting_deployments[] = $payload;
+        update_option( 'mrs_gitdeploy_waiting_deployments', $waiting_deployments, false );
+    } else {
+        update_option( 'mrs_gitdeploy_deployment_in_progress', 'yes' );
+        $process = new MRS_GitDeploy_Pull_from_GitHub($payload);
+    }
 
     return new WP_REST_Response('Webhook processed successfully', 200);
 }

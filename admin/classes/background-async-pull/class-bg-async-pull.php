@@ -24,6 +24,9 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
             $this->status = 'Failed';
             $this->reason = __( 'Setup of the plugin is not completed yet.', 'mrs-gitdeploy' );
             $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, array() );
+            
+            // process the next batch
+            mrs_gitdeploy_process_next_deployment();
             return;
         }
 
@@ -86,6 +89,9 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
         delete_option( 'mrs_gitdeploy_deployment_in_progress' );
         $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, wp_json_encode( $changed_files ) );
+        
+        // process the next batch
+        mrs_gitdeploy_process_next_deployment();
     }
 
     /**

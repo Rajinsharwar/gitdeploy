@@ -654,3 +654,26 @@ function mrs_gitdeploy_resync_all_files_from_github_repo() {
     ];
     $process = new MRS_GitDeploy_Pull_from_GitHub( $payload );
 }
+
+/**
+ * Process the next batch of deployments.
+ */
+function mrs_gitdeploy_process_next_deployment() {
+    // check and process the next deployment
+    $waiting_deployments = get_option( 'mrs_gitdeploy_waiting_deployments' );
+
+    if ( false === $waiting_deployments ) {
+        return;
+    }
+
+    if ( is_array( $waiting_deployments ) && isset( $waiting_deployments[ 0 ] ) ) {
+        $process = new MRS_GitDeploy_Pull_from_GitHub( $waiting_deployments[ 0 ] );
+    }
+
+    // check and delete the deployment that has been fired.
+    if ( false !== $waiting_deployments ) {
+        unset( $waiting_deployments[ 0 ] );
+        $waiting_deployments = array_values( $waiting_deployments );
+        update_option( 'mrs_gitdeploy_waiting_deployments', $waiting_deployments, false );
+    }
+}
