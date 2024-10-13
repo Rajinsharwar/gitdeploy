@@ -67,8 +67,8 @@ class MRS_GitDeploy_Resync {
             $this->status = 'Failed';
             $deployment_log = new MRS_GitDeploy_Deployments(
                 $this->status, 
-                __( 'WP -> GitHub', 'mrs-gitdeploy' ), 
-                __( 'Wrong API credentials given.', 'mrs-gitdeploy' )
+                __( 'WP -> GitHub', 'gitdeploy' ), 
+                __( 'Wrong API credentials given.', 'gitdeploy' )
             );
             wp_delete_file( $this->zip_file );
             return false;
@@ -80,9 +80,9 @@ class MRS_GitDeploy_Resync {
                 $this->status = 'Failed';
                 $deployment_log = new MRS_GitDeploy_Deployments(
                     $this->status, 
-                    __( 'WP -> GitHub', 'mrs-gitdeploy' ), 
+                    __( 'WP -> GitHub', 'gitdeploy' ), 
                     sprintf(
-                        __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'mrs-gitdeploy' ),
+                        __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                         $limit_cap,
                         $rate_used,
                         $human_readable_time
@@ -98,8 +98,8 @@ class MRS_GitDeploy_Resync {
             $this->status = 'Failed';
             $deployment_log = new MRS_GitDeploy_Deployments(
                 $this->status, 
-                __( 'WP -> GitHub', 'mrs-gitdeploy' ),
-                __( 'Connected GitHub Repository was not found.', 'mrs-gitdeploy' )
+                __( 'WP -> GitHub', 'gitdeploy' ),
+                __( 'Connected GitHub Repository was not found.', 'gitdeploy' )
             );
             wp_delete_file( $this->zip_file );
             return false;
@@ -111,7 +111,7 @@ class MRS_GitDeploy_Resync {
             $deployment_log = new MRS_GitDeploy_Deployments( $this->status, 
                 __( 'WP -> GitHub' ),
                 sprintf(
-                    __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'mrs-gitdeploy' ),
+                    __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                     $error_string,
                     $limit_cap,
                     $rate_used,
@@ -131,7 +131,7 @@ class MRS_GitDeploy_Resync {
             $deployment_log = new MRS_GitDeploy_Deployments( $this->status, 
                 __( 'WP -> GitHub' ),
                 sprintf(
-                    __( 'Error from Github API. <br><br> %s. <br><br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'mrs-gitdeploy' ),
+                    __( 'Error from Github API. <br><br> %s. <br><br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                     $error_string,
                     $limit_cap,
                     $rate_used,

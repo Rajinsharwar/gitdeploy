@@ -13,14 +13,14 @@ function mrs_gitdeploy_permission_callback(WP_REST_Request $request) {
     $signature = $headers['x_hub_signature_256'][0] ?? '';
 
     if (empty($signature)) {
-        return new WP_Error('rest_forbidden', __('Invalid signature', 'mrs-gitdeploy'), ['status' => 401]);
+        return new WP_Error('rest_forbidden', __('Invalid signature', 'gitdeploy'), ['status' => 401]);
     }
 
     // Validate the signature
     $signature_validation = mrs_gitdeploy_verify_github_signature($request, $signature);
 
     if (!$signature_validation) {
-        return new WP_Error('rest_forbidden', __('Invalid signature', 'mrs-gitdeploy'), ['status' => 401]);
+        return new WP_Error('rest_forbidden', __('Invalid signature', 'gitdeploy'), ['status' => 401]);
     }
 
     return true; // Allow the request to proceed if the signature is valid

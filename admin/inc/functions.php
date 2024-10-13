@@ -120,7 +120,7 @@ function mrs_gitdeploy_finish_setup() {
     $repo_name = $creds[ 'mrs_gitdeploy_repo' ] ?? '';
 
     if ( ! $username || ! $gh_token || ! $repo_name ) {
-        return __('Couldn\'t complete Setup. Required Credentials are missing. Please re-save the settings from Step 2', 'mrs-gitdeploy');
+        return __('Couldn\'t complete Setup. Required Credentials are missing. Please re-save the settings from Step 2', 'gitdeploy');
     }
 
     // GitHub API endpoint to create a webhook
@@ -159,7 +159,7 @@ function mrs_gitdeploy_finish_setup() {
     // Check for errors
     if ( is_wp_error( $response ) ) {
         return sprintf(
-            __('Error setting up GitHub webhook: %s', 'mrs-gitdeploy'),
+            __('Error setting up GitHub webhook: %s', 'gitdeploy'),
             $response->get_error_message()
         );
     }
@@ -193,7 +193,7 @@ function mrs_gitdeploy_finish_setup() {
     } else {
         // Webhook creation failed
         return sprintf(
-            __('Failed to create GitHub webhook. Error: %s', 'mrs-gitdeploy'),
+            __('Failed to create GitHub webhook. Error: %s', 'gitdeploy'),
             $response_data[ 'message' ]
         );
     }
@@ -337,7 +337,7 @@ function mrs_gitdeploy_resync_action() {
     if ( ! get_option( 'mrs_gitdeploy_setup_complete' ) ) {
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">Setup not completed yet!</b> <br> Complete the <u><a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_setup' ) ) . '" style="color: blue;">Setup</a></u> first.</p>', 'mrs-gitdeploy'),
+                __('<p><b style="color: red;">Setup not completed yet!</b> <br> Complete the <u><a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_setup' ) ) . '" style="color: blue;">Setup</a></u> first.</p>', 'gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -358,7 +358,7 @@ function mrs_gitdeploy_resync_action() {
     if ( 'yes' === get_option( 'mrs_gitdeploy_resync_in_progress' ) ) {
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">One Resync action is already running!</b> <br> Check the <u>Actions</u> tab in your GitHub respository for the latest workflow progress.</p>', 'mrs-gitdeploy'),
+                __('<p><b style="color: red;">One Resync action is already running!</b> <br> Check the <u>Actions</u> tab in your GitHub respository for the latest workflow progress.</p>', 'gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -423,7 +423,7 @@ function mrs_gitdeploy_resync_action() {
         // Return success response
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b> Resync request sent!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for status.</p>', 'mrs-gitdeploy'),
+                __('<p><b> Resync request sent!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for status.</p>', 'gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -441,7 +441,7 @@ function mrs_gitdeploy_resync_action() {
     } else {
         wp_send_json_error(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">Failed to resync!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for info.</p>', 'mrs-gitdeploy'),
+                __('<p><b style="color: red;">Failed to resync!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for info.</p>', 'gitdeploy'),
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -506,9 +506,9 @@ function mrs_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
             $status = 'Failed';
             $deployment_log = new MRS_GitDeploy_Deployments(
                 $status, 
-                __( 'WP -> GitHub', 'mrs-gitdeploy' ), 
+                __( 'WP -> GitHub', 'gitdeploy' ), 
                 sprintf(
-                    __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'mrs-gitdeploy' ),
+                    __( 'GitHub API rate limit exceeded. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                     $limit_cap,
                     $rate_used,
                     $human_readable_time
@@ -528,7 +528,7 @@ function mrs_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
         $deployment_log = new MRS_GitDeploy_Deployments( $status, 
             __( 'WP -> GitHub' ),
             sprintf(
-                __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'mrs-gitdeploy' ),
+                __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                 $error_string,
                 $limit_cap,
                 $rate_used,

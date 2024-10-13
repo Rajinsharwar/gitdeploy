@@ -19,15 +19,15 @@ function mrs_gitdeploy_admin_toolbar_item( $wp_admin_bar ) {
     $is_deploying = ( get_option( 'mrs_gitdeploy_deployment_in_progress' ) === 'yes' );
     
     if ( $is_resyncing ) {
-        $label = '<span class="dashicons dashicons-image-rotate mrs-gitdeploy-icon" style="font-family: dashicons; animation: spin 2s linear infinite; margin-right: 4px;"></span> ' . __( 'Resyncing', 'mrs-gitdeploy' );
+        $label = '<span class="dashicons dashicons-image-rotate mrs-gitdeploy-icon" style="font-family: dashicons; animation: spin 2s linear infinite; margin-right: 4px;"></span> ' . __( 'Resyncing', 'gitdeploy' );
         $bg_color = '#ffeb3b';
         $text_color = 'black';
     } elseif ( $is_deploying ) {
-        $label = '<span class="dashicons dashicons-image-rotate mrs-gitdeploy-icon" style="font-family: dashicons; animation: spin 2s linear infinite; margin-right: 4px;"></span> ' . __( 'Deploying', 'mrs-gitdeploy' );
+        $label = '<span class="dashicons dashicons-image-rotate mrs-gitdeploy-icon" style="font-family: dashicons; animation: spin 2s linear infinite; margin-right: 4px;"></span> ' . __( 'Deploying', 'gitdeploy' );
         $bg_color = '#ffeb3b';
         $text_color = 'black';
     } else {
-        $label = '<span class="dashicons dashicons-cloud-saved mrs-gitdeploy-icon" style="font-family: dashicons; color: white; margin-right: 4px;"></span> ' . __( 'GitDeploy is Active', 'mrs-gitdeploy' );
+        $label = '<span class="dashicons dashicons-cloud-saved mrs-gitdeploy-icon" style="font-family: dashicons; color: white; margin-right: 4px;"></span> ' . __( 'GitDeploy is Active', 'gitdeploy' );
         $bg_color = '#28a745';
         $text_color = 'white';
     }
@@ -38,7 +38,7 @@ function mrs_gitdeploy_admin_toolbar_item( $wp_admin_bar ) {
         'title' => '<span class="mrs-gitdeploy-toolbar" style="padding: 4px 8px; background-color: ' . esc_attr( $bg_color ) . '; border-radius: 4px; color: ' . esc_attr( $text_color ) . ';">' . $label . '</span>',
         'href'  => admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ),
         'meta'  => array(
-            'title' => __( 'View GitDeploy Deployments', 'mrs-gitdeploy' ), // Tooltip on hover
+            'title' => __( 'View GitDeploy Deployments', 'gitdeploy' ), // Tooltip on hover
         ),
     ) );
 }

@@ -22,7 +22,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
     protected function handle() {
         if ( ! get_option( 'mrs_gitdeploy_setup_complete' ) ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Setup of the plugin is not completed yet.', 'mrs-gitdeploy' );
+            $this->reason = __( 'Setup of the plugin is not completed yet.', 'gitdeploy' );
             $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, array() );
             
             // process the next batch
@@ -84,7 +84,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
             }   
         } else {
             $this->status = 'Failed';
-            $this->reason = __( 'Failed to download the GitHub repository ZIP file.', 'mrs-gitdeploy' );
+            $this->reason = __( 'Failed to download the GitHub repository ZIP file.', 'gitdeploy' );
         }
 
         delete_option( 'mrs_gitdeploy_deployment_in_progress' );
@@ -172,7 +172,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
         if ( ! $subfolders ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Cannot find pathnames in Repo data.', 'mrs-gitdeploy' );
+            $this->reason = __( 'Cannot find pathnames in Repo data.', 'gitdeploy' );
             return;
         }
 
@@ -208,7 +208,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
     
         if ( ! $wp_filesystem->is_dir( $source_dir ) ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Source directory does not exist.', 'mrs-gitdeploy' );
+            $this->reason = __( 'Source directory does not exist.', 'gitdeploy' );
             return;
         }
     
@@ -216,7 +216,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
     
         if ( ! $files ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Couldn\'t scan Repo Data after downloading.', 'mrs-gitdeploy' );
+            $this->reason = __( 'Couldn\'t scan Repo Data after downloading.', 'gitdeploy' );
             return;
         }
     
@@ -230,7 +230,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
     
             if ( ! $moved ) {
                 $this->status = 'Failed';
-                $this->reason = sprintf( __( 'Couldn\'t move file: %s to the target directory.', 'mrs-gitdeploy' ), $file );
+                $this->reason = sprintf( __( 'Couldn\'t move file: %s to the target directory.', 'gitdeploy' ), $file );
                 return;
             }
         }
@@ -251,7 +251,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
         if ( ! $changed_files || count( $changed_files ) < 0 ) {
             $this->status = 'Failed';
-            $this->reason = __( 'No changed files found.', 'mrs-gitdeploy' );
+            $this->reason = __( 'No changed files found.', 'gitdeploy' );
             return false;
         }
 
@@ -278,7 +278,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $mkdir ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'mrs-gitdeploy' );
+                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'gitdeploy' );
                         return false;
                     }
                 }
@@ -288,7 +288,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
                 if ( ! $copy ) {
                     $this->status = 'Failed';
-                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'mrs-gitdeploy' );
+                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'gitdeploy' );
                     return false;
                 }
             } else {
@@ -298,7 +298,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $unlink ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'mrs-gitdeploy' );
+                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'gitdeploy' );
                         return false;
                     }
                 }
@@ -323,7 +323,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
         if ( ! $changed_files || count( $changed_files ) < 0 ) {
             $this->status = 'Failed';
-            $this->reason = __( 'No plugins, themes or mu-plugins found in the Github repo', 'mrs-gitdeploy' );
+            $this->reason = __( 'No plugins, themes or mu-plugins found in the Github repo', 'gitdeploy' );
             delete_option( 'mrs_gitdeploy_resync_in_progress' );
             return false;
         }
@@ -348,7 +348,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $mkdir ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'mrs-gitdeploy' );
+                        $this->reason = __( 'Couldn\'t create temporary directory for repo data.', 'gitdeploy' );
                         delete_option( 'mrs_gitdeploy_resync_in_progress' );
                         return false;
                     }
@@ -359,7 +359,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
                 if ( ! $copy ) {
                     $this->status = 'Failed';
-                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'mrs-gitdeploy' );
+                    $this->reason = __( 'Couldn\'t copy repo data from temporary folder.', 'gitdeploy' );
                     delete_option( 'mrs_gitdeploy_resync_in_progress' );
                     return false;
                 }
@@ -370,7 +370,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
                     if ( ! $unlink ) {
                         $this->status = 'Failed';
-                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'mrs-gitdeploy' );
+                        $this->reason = __( 'Couldn\'t delete one of the changed file from local codebase.', 'gitdeploy' );
                         delete_option( 'mrs_gitdeploy_resync_in_progress' );
                         return false;
                     }
