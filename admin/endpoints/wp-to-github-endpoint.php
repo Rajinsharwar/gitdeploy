@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly 
+
 add_action('rest_api_init', function () {
     register_rest_route('mrs_gitdeploy/v1', '/push-completed', [
         'methods' => 'POST',
@@ -53,15 +55,15 @@ function mrs_gitdeploy_handle_push_completed(WP_REST_Request $request) {
     if ( 'success' === $status_from_gh ) {
         $status = 'Success';
         $deployment_log = new MRS_GitDeploy_Deployments( $status, 
-            __( 'WP -> GitHub' ), __( 'Resync Deployment from WordPress code to GitHub repository has been completed.' ) );
+            __( 'WP -> GitHub', 'gitdeploy' ), __( 'Resync Deployment from WordPress code to GitHub repository has been completed.', 'gitdeploy' ) );
         
         delete_option( 'mrs_gitdeploy_first_resync' );
         return new WP_REST_Response('Webhook processed successfully', 200);
     } else {
         $status = 'Failed';
         $deployment_log = new MRS_GitDeploy_Deployments( $status, 
-            __( 'WP -> GitHub' ), __( 'An error was reported from GitHub Actions. Please Check the latest WorkFlow job under the Actions tab of your repository.' ) );
+            __( 'WP -> GitHub', 'gitdeploy' ), __( 'An error was reported from GitHub Actions. Please Check the latest WorkFlow job under the Actions tab of your repository.', 'gitdeploy' ) );
     
-        return new WP_REST_Response('Webhook processed successfully', 200);
+        return new WP_REST_Response('Webhook not processed successfully', 404);
     }
 }

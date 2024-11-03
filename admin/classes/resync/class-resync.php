@@ -30,11 +30,20 @@ class MRS_GitDeploy_Resync {
     }
 
     public function sync() {
+
+        // pass true or false as string
+        $is_basic_auth = ( 1 == get_option( 'mrs_gitdeploy_basic_auth_enabled' ) ) ? 'true' : 'false';
+        $basic_auth_username = get_option( 'mrs_gitdeploy_basic_auth_username' ) ?? '';
+        $basic_auth_password = get_option( 'mrs_gitdeploy_basic_auth_password' ) ?? '';
+
         $post_fields = wp_json_encode([
             'ref' => $this->branch,
             'inputs' => [
-                'file_url' => $this->zip_file_url,
-                'file_name' => basename( $this->zip_file )
+                'file_url'            => $this->zip_file_url,
+                'file_name'           => basename( $this->zip_file ),
+                'is_basic_auth'       => $is_basic_auth,
+                'basic_auth_username' => $basic_auth_username,
+                'basic_auth_password' => $basic_auth_password
             ]
         ]);
     
@@ -109,7 +118,7 @@ class MRS_GitDeploy_Resync {
             $this->status = 'Failed';
             $error_string = $response->get_error_message();
             $deployment_log = new MRS_GitDeploy_Deployments( $this->status, 
-                __( 'WP -> GitHub' ),
+                __( 'WP -> GitHub', 'gitdeploy' ),
                 sprintf(
                     __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                     $error_string,
@@ -129,7 +138,7 @@ class MRS_GitDeploy_Resync {
             $this->status = 'Failed';
             $error_string = wp_remote_retrieve_body( $response );
             $deployment_log = new MRS_GitDeploy_Deployments( $this->status, 
-                __( 'WP -> GitHub' ),
+                __( 'WP -> GitHub', 'gitdeploy' ),
                 sprintf(
                     __( 'Error from Github API. <br><br> %s. <br><br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                     $error_string,

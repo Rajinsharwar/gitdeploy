@@ -1,9 +1,10 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 /**
  * Hooks.
  */
-add_action( 'admin_head', 'mrs_gitdeploy_toolbar_styles' );
 add_action( 'admin_bar_menu', 'mrs_gitdeploy_admin_toolbar_item', 100 );
 
 /**
@@ -41,26 +42,4 @@ function mrs_gitdeploy_admin_toolbar_item( $wp_admin_bar ) {
             'title' => __( 'View GitDeploy Deployments', 'gitdeploy' ), // Tooltip on hover
         ),
     ) );
-}
-
-/**
- * Enqueue custom styles for the toolbar item.
- */
-function mrs_gitdeploy_toolbar_styles() {
-    ?>
-    <style>
-        /* Custom style for the toolbar item */
-        .mrs-gitdeploy-toolbar {
-            display: inline-flex;
-            align-items: center;
-            font-weight: 600;
-        }
-        
-        /* Style for the spinning icon */
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-    </style>
-    <?php
 }

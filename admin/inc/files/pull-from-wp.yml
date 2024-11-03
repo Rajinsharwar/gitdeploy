@@ -11,70 +11,92 @@ on:
         description: 'The name of the ZIP file'
         required: true
         default: 'wp-content.zip'
+      is_basic_auth:
+        description: 'Is a basic Auth active?'
+        required: true
+        default: 'false'
+      basic_auth_username:
+        description: 'Username of Basic Auth'
+        required: false
+      basic_auth_password:
+        description: 'Password of Basic Auth'
+        required: false
 
 jobs:
   sync_wp_to_repo:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the current state of the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Remove the existing content (plugins, themes, mu-plugins) from the repository
       - name: Remove existing wp-content directories
         run: |
           rm -rf plugins
           rm -rf themes
           rm -rf mu-plugins
 
-      # Step 3: Download the ZIP file from the provided URL
       - name: Download ZIP file
         run: |
-          curl -O ${{ github.event.inputs.file_url }}
+          # Prepare Basic Authentication headers if is_basic_auth is true
+          if [ "${{ github.event.inputs.is_basic_auth }}" == "true" ]; then
+            auth_header="-u ${{ github.event.inputs.basic_auth_username }}:${{ github.event.inputs.basic_auth_password }}"
+          else
+            auth_header=""
+          fi
 
-      # Step 5: Extract the downloaded ZIP file, overwrite without prompts
+          curl $auth_header -O ${{ github.event.inputs.file_url }}
+
       - name: Extract ZIP file
         run: |
           7z x ${{ github.event.inputs.file_name }} -y
 
-      # Step 6: Remove the ZIP file after extraction
       - name: Remove ZIP file
         run: |
           rm -f ${{ github.event.inputs.file_name }}
 
-      # Step 2: Remove mrs-gitdeploy plugin
       - name: Remove mrs-gitdeploy
         run: |
           rm -rf plugins/mrs-gitdeploy
 
-      # Step 7: Commit and push the extracted files, including removals
       - name: Commit changes
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add .
           # Check if there are any changes to be committed
-          if git diff-index --quiet HEAD; then
-            echo "No changes to commit. Everything is up to date."
-          else
+          if [[ `git status --porcelain` ]]; then
             git commit -m "Update from WordPress ${{ github.event.inputs.file_name }} [skip gitdeploy]"
             git push
+          else
+            echo "No changes to commit. Everything is up to date."
           fi
-          
-      # Step 4: Extract site URL from the file_url and send API request to WordPress
+
       - name: Notify WordPress site via API
         if: always()
         run: |
           # Extract the base domain from the file_url
           site_url=$(echo "${{ github.event.inputs.file_url }}" | sed -E 's|(https?://[^/]+).*|\1|')
 
-          # Send POST request to the WordPress REST API endpoint
-          curl -X POST \
+          # Prepare Basic Authentication headers if is_basic_auth is true
+          if [ "${{ github.event.inputs.is_basic_auth }}" == "true" ]; then
+            auth_header="-u ${{ github.event.inputs.basic_auth_username }}:${{ github.event.inputs.basic_auth_password }}"
+          else
+            auth_header=""
+          fi
+
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            $auth_header \
             -H "Content-Type: application/json" \
             -d '{"file_name": "${{ github.event.inputs.file_name }}", "action_id": "${{ github.run_id }}", "status": "${{ job.status }}"}' \
-            ${site_url}/wp-json/mrs_gitdeploy/v1/push-completed
-          # Step 8: Cleanup step to remove any remaining files and directories
+            ${site_url}/wp-json/mrs_gitdeploy/v1/push-completed)
+
+          if [ "$response_code" -ne 200 ]; then
+            echo "Error: API request failed with response code $response_code"
+            exit 1
+          else
+            echo "API request succeeded with response code $response_code"
+          fi
 
       # Cleanup
       - name: Cleanup

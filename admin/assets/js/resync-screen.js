@@ -23,4 +23,24 @@ jQuery(document).ready(function($) {
             }
         });
     });
+
+    // The confirmation popup for update the wp from github
+    var resyncButton = document.getElementById('resync-all-files-button');
+    var proceedButton = document.getElementById('proceed-button');
+    var cancelButton = document.getElementById('cancel-button');
+    var confirmationModal = document.getElementById('confirmation-modal');
+    var resyncForm = document.getElementById('resync-form');
+
+    resyncButton.addEventListener('click', function() {
+        confirmationModal.style.display = 'flex';
+    });
+
+    proceedButton.addEventListener('click', function() {
+        confirmationModal.style.display = 'none';
+        resyncForm.submit();
+    });
+
+    cancelButton.addEventListener('click', function() {
+        confirmationModal.style.display = 'none';
+    });
 });

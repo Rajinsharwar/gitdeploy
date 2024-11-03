@@ -13,3 +13,6 @@ add_action('wp_ajax_mrs_gitdeploy_get_deployment_details', 'mrs_gitdeploy_get_de
 
 // Hook to handle AJAX request
 add_action('wp_ajax_mrs_gitdeploy_resync', 'mrs_gitdeploy_resync_action');
+
+// Disable admin notices in my screens.
+add_action( 'in_admin_header', 'mrs_gitdeploy_hide_notices_admin', 99 );

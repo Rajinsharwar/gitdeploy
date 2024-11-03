@@ -173,20 +173,20 @@ function mrs_gitdeploy_finish_setup() {
     }
 
     if ( 403 === $response_code ) {
-        return __( 'Forbidden: API Rate limit exceeded' );
+        return __( 'Forbidden: API Rate limit exceeded', 'gitdeploy' );
     }
 
     if ( 404 === $response_code ) {
-        return __( 'Repository credentials are not correct' );
+        return __( 'Repository credentials are not correct', 'gitdeploy' );
     }
 
     if ( isset( $response_data[ 'id' ] ) ) {
         $workflow_response = mrs_gitdeploy_fix_workflow_permissions( $username, $repo_name, $gh_token );
 
         if ( 'could_not_change_workflow_setting' === $workflow_response ) {
-            return __( 'Couldn\'t modify Workflow permissions for your repository. Maybe your organization is preventing it?' );
+            return __( 'Couldn\'t modify Workflow permissions for your repository. Maybe your organization is preventing it?', 'gitdeploy' );
         } elseif ( 'api_limit_exceeded' === $workflow_response ) {
-            return __( 'GitHub API rate limit exceeded of your account.' );
+            return __( 'GitHub API rate limit exceeded of your account.', 'gitdeploy' );
         } else {
             return true;
         }
@@ -312,7 +312,7 @@ function mrs_gitdeploy_get_deployment_details() {
         if ( $files_changed ) {
             $details .= '<p><strong>Files Changed:</strong></p><ul>';
             if ( 'all' === $files_changed[ 0 ] ) {
-                $details .= '<li><i>' . __( '(Changed All Files in WordPress codebase from GitHub Repo)' ) . '</i></li>';
+                $details .= '<li><i>' . __( '(Changed All Files in WordPress codebase from GitHub Repo)', 'gitdeploy' ) . '</i></li>';
             } else {
                 foreach ($files_changed as $file) {
                     $details .= '<li>' . esc_html($file) . '</li>';
@@ -335,9 +335,16 @@ function mrs_gitdeploy_resync_action() {
     check_ajax_referer('mrs_gitdeploy_resync_nonce', 'nonce');
 
     if ( ! get_option( 'mrs_gitdeploy_setup_complete' ) ) {
+        $setup_url = esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_setup' ) );
+
+        $message = sprintf(
+            __('<p><b style="color: red;">Setup not completed yet!</b> <br> Complete the <u><a href="%s" style="color: blue;">Setup</a></u> first.</p>', 'gitdeploy'),
+            $setup_url
+        );
+        
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">Setup not completed yet!</b> <br> Complete the <u><a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_setup' ) ) . '" style="color: blue;">Setup</a></u> first.</p>', 'gitdeploy'),
+                $message,
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -348,10 +355,11 @@ function mrs_gitdeploy_resync_action() {
                         'href' => array(),
                         'target' => array(),
                         'style' => array(),
-                    )
+                    ),
                 )
-            )
+            ),
         ));
+        
     }    
 
     // Bail out for already running sync
@@ -420,10 +428,16 @@ function mrs_gitdeploy_resync_action() {
     $resync = new MRS_GitDeploy_Resync( $zip_file_url, $zip_file );
     $result = $resync->sync();
     if ( true === $result ) {
+        $deployments_url = esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) );
+        $message = sprintf(
+            __('<p><b> Resync request sent!</b> <br> Check the <a href="%s" target="_blank"><i><u>Deployments</u></i></a> tab for status.</p>', 'gitdeploy'),
+            $deployments_url
+        );
+
         // Return success response
         wp_send_json_success(array(
             'message' => wp_kses(
-                __('<p><b> Resync request sent!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for status.</p>', 'gitdeploy'),
+                $message,
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -437,11 +451,18 @@ function mrs_gitdeploy_resync_action() {
                     )
                 )
             )
-        ));
+        ));        
     } else {
+        $deployments_url = esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) );
+
+        $message = sprintf(
+            __('<p><b style="color: red;">Failed to resync!</b> <br> Check the <a href="%s" target="_blank"><i><u>Deployments</u></i></a> tab for info.</p>', 'gitdeploy'),
+            $deployments_url
+        );
+        
         wp_send_json_error(array(
             'message' => wp_kses(
-                __('<p><b style="color: red;">Failed to resync!</b> <br> Check the <a href="' . esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) ) . '" target="_blank"><i><u>Deployments</u></i></a> tab for info.</p>', 'gitdeploy'),
+                $message,
                 array(
                     'p' => array(),
                     'b' => array('style' => array()),
@@ -455,7 +476,7 @@ function mrs_gitdeploy_resync_action() {
                     )
                 )
             )
-        ));
+        ));        
     }
 }
 
@@ -526,7 +547,7 @@ function mrs_gitdeploy_is_github_action_running( $run_id, $zip_file ) {
         $status = 'Failed';
         $error_string = $response->get_error_message();
         $deployment_log = new MRS_GitDeploy_Deployments( $status, 
-            __( 'WP -> GitHub' ),
+            __( 'WP -> GitHub', 'gitdeploy' ),
             sprintf(
                 __( 'Error from WordPress. Error: %s. <br> API Limit Cap: %d. <br> API Rate used: %d. <br> API Limit will reset at: %s', 'gitdeploy' ),
                 $error_string,
@@ -675,5 +696,21 @@ function mrs_gitdeploy_process_next_deployment() {
         unset( $waiting_deployments[ 0 ] );
         $waiting_deployments = array_values( $waiting_deployments );
         update_option( 'mrs_gitdeploy_waiting_deployments', $waiting_deployments, false );
+    }
+}
+
+function mrs_gitdeploy_hide_notices_admin(){
+    $screen = get_current_screen();
+
+    $mrs_gitdeploy_hooks = [ 'toplevel_page_mrs_gitdeploy_setup',
+    'gitdeploy_page_mrs_gitdeploy_settings',
+    'gitdeploy_page_mrs_gitdeploy_deployments',
+    'gitdeploy_page_mrs_gitdeploy_resync' ];
+
+    if ( in_array( $screen->id, $mrs_gitdeploy_hooks ) ) {
+        remove_all_actions( 'user_admin_notices' );
+        remove_all_actions( 'admin_notices' );
+
+        add_action( 'admin_notices', 'mrs_gitdeploy_setup_complete_now_resync' );
     }
 }

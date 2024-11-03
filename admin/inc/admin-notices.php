@@ -16,7 +16,7 @@ function mrs_gitdeploy_setup_complete_now_resync() {
     $class = 'notice notice-success';
     $resync_url = admin_url( 'admin.php?page=mrs_gitdeploy_resync' );
     $message = sprintf(
-        __( 'Thank you for finishing the setup. Now, please <a href="%s">Resync GitHub repo with your WordPress codebase</a> to kickstart the integration.', 'sample-text-domain' ),
+        __( 'Thank you for finishing the setup. Now, please <a href="%s">Resync GitHub repo with your WordPress codebase</a> to kickstart the integration.', 'gitdeploy' ),
         esc_url( $resync_url )
     );
 

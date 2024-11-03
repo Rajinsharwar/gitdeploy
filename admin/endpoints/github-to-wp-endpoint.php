@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly 
+
 add_action('rest_api_init', function () {
     register_rest_route('mrs_gitdeploy/v1', '/webhook', [
         'methods' => 'POST',
@@ -29,8 +31,12 @@ function mrs_gitdeploy_permission_callback(WP_REST_Request $request) {
 function mrs_gitdeploy_handle_webhook(WP_REST_Request $request) {
     $payload = $request->get_json_params();
 
+    if ( ! isset( $payload[ 'head_commit' ][ 'message' ] ) ) {
+        return new WP_REST_Response('Webhook not processed', 200);
+    }
+
     // No need to Push when Pull event is runned from GH actions.
-    if ( isset( $payload[ 'head_commit' ][ 'message' ] ) && str_contains( $payload[ 'head_commit' ][ 'message' ], '[skip gitdeploy]' ) ) {
+    if ( str_contains( $payload[ 'head_commit' ][ 'message' ], '[skip gitdeploy]' ) ) {
         return new WP_REST_Response('Webhook not processed', 200);
     }
 

@@ -23,7 +23,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
         if ( ! get_option( 'mrs_gitdeploy_setup_complete' ) ) {
             $this->status = 'Failed';
             $this->reason = __( 'Setup of the plugin is not completed yet.', 'gitdeploy' );
-            $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, array() );
+            $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP', 'gitdeploy' ), $this->reason, array() );
             
             // process the next batch
             mrs_gitdeploy_process_next_deployment();
@@ -88,7 +88,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
         }
 
         delete_option( 'mrs_gitdeploy_deployment_in_progress' );
-        $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP' ), $this->reason, wp_json_encode( $changed_files ) );
+        $deployment_log = new \MRS_GitDeploy_Deployments( $this->status, __( 'GitHub -> WP', 'gitdeploy' ), $this->reason, wp_json_encode( $changed_files ) );
         
         // process the next batch
         mrs_gitdeploy_process_next_deployment();
@@ -131,7 +131,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
         if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Unable to get Repository data' );
+            $this->reason = __( 'Unable to get Repository data', 'gitdeploy' );
             return false;
         }
 
@@ -163,7 +163,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
 
         if ( is_wp_error( $extracted_zip_response ) ) {
             $this->status = 'Failed';
-            $this->reason = __( 'Unable to extract Repository data' );
+            $this->reason = __( 'Unable to extract Repository data', 'gitdeploy' );
             return false;
         }
 
@@ -185,7 +185,7 @@ class MRS_GitDeploy_Async extends WP_Async_Request {
             $this->delete_directory( $github_folder );
         } else {
             $this->status = 'Failed';
-            $this->reason = __( 'No Repository data found' );
+            $this->reason = __( 'No Repository data found', 'gitdeploy' );
             return false;
         }
 

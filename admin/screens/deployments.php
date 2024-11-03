@@ -1,21 +1,31 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly 
+
 $setup_done = get_option( 'mrs_gitdeploy_setup_complete' );
 
 // Setup Complete Message
 if ( $setup_done ) { ?>
     <div class="setup-complete">
         <span class="dashicons dashicons-yes"></span>
-        <span><?php _e('Setup complete!', 'mrs-gitdeploy'); ?></span>
+        <span><?php esc_html_e( 'Setup complete!', 'gitdeploy' ); ?></span>
     </div>
 <?php } else { ?>
     <div class="setup-incomplete">
         <span class="dashicons dashicons-info"></span>
         <span>
             <?php
-            echo sprintf(
-                __('Setup not yet complete, please <a style="color: white;" href="%s">finish the Setup</a>!', 'mrs-gitdeploy'),
-                esc_url(admin_url('admin.php?page=mrs_gitdeploy_setup'))
+            echo wp_kses(
+                sprintf(
+                    'Setup not yet complete, please <a style="color: white;" href="%s">finish the Setup</a>!',
+                    esc_url(admin_url('admin.php?page=mrs_gitdeploy_setup'))
+                ),
+                array(
+                    'a' => array(
+                        'href' => array(),
+                        'style' => array(),
+                    )
+                )
             );
             ?>
         </span>
@@ -29,33 +39,25 @@ if (isset($_POST['action']) && $_POST['action'] === 'clear_logs') {
     if (check_admin_referer('mrs_gitdeploy_clear_logs_nonce', 'mrs_gitdeploy_nonce_field')) {
         // Clear all logs
         $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}mrs_gitdeploy_deployments");
-
-        add_action('admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p>' . __('All logs have been cleared.', 'mrs-gitdeploy') . '</p></div>';
-        });
+    
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('All logs have been cleared.', 'gitdeploy') . '</p></div>';
     } else {
         // Nonce check failed
-        add_action('admin_notices', function() {
-            echo '<div class="notice notice-error is-dismissible"><p>' . __('Nonce verification failed.', 'mrs-gitdeploy') . '</p></div>';
-        });
-    }
+        echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('Nonce verification failed.', 'gitdeploy') . '</p></div>';
+    }    
 }
 
 // Cancel Resync
 if (isset($_POST['action']) && $_POST['action'] === 'cancel_resync') {
     if (check_admin_referer('mrs_gitdeploy_cancel_resync_nonce', 'mrs_gitdeploy_nonce_field')) {
         // Cancel ReSync
-        delete_option( 'mrs_gitdeploy_resync_in_progress' );
-
-        add_action('admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p>' . __('Resync has been cancelled.', 'mrs-gitdeploy') . '</p></div>';
-        });
+        delete_option('mrs_gitdeploy_resync_in_progress');
+    
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Resync has been cancelled.', 'gitdeploy') . '</p></div>';
     } else {
         // Nonce check failed
-        add_action('admin_notices', function() {
-            echo '<div class="notice notice-error is-dismissible"><p>' . __('Nonce verification failed.', 'mrs-gitdeploy') . '</p></div>';
-        });
-    }
+        echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('Nonce verification failed.', 'gitdeploy') . '</p></div>';
+    }    
 }
 
 // Pagination
@@ -90,7 +92,7 @@ foreach ($deployments as $deployment) {
 
 ?>
 <div class="wrap">
-    <h1><?php _e('Deployment Logs', 'mrs-gitdeploy'); ?></h1> <?php
+    <h1><?php esc_html_e('Deployment Logs', 'gitdeploy'); ?></h1> <?php
     $resync_in_progress = ( 'yes' === get_option( 'mrs_gitdeploy_resync_in_progress' ) ); ?>
 
     <div style="display: flex;">
@@ -100,7 +102,7 @@ foreach ($deployments as $deployment) {
                 <input type="hidden" name="action" value="cancel_resync">
                 <button type="submit" class="button button-secondary" style="margin-right: 20px; background-color: yellow; color: black;">
                     <b>
-                        <?php _e('Cancel ReSync', 'mrs-gitdeploy'); ?>
+                        <?php esc_html_e('Cancel ReSync', 'gitdeploy'); ?>
                     </b>
                 </button>
             </form>
@@ -112,7 +114,7 @@ foreach ($deployments as $deployment) {
                 <input type="hidden" name="action" value="clear_logs">
                 <button type="submit" class="button button-secondary" style="background-color: #ff0000; color: #ffffff;">
                     <b>
-                        <?php _e('Clear all logs', 'mrs-gitdeploy'); ?>
+                        <?php esc_html_e('Clear all logs', 'gitdeploy'); ?>
                     </b>
                 </button>
             </form>
@@ -123,14 +125,15 @@ foreach ($deployments as $deployment) {
     <?php
     if ( empty( $grouped_deployments ) ) { ?>
         <table class="wp-list-table widefat fixed striped">
-        <thead>
-            <tr>
-                <th><?php _e('Deployment Time', 'mrs-gitdeploy'); ?></th>
-                <th><?php _e('Type', 'mrs-gitdeploy'); ?></th>
-                <th><?php _e('Status', 'mrs-gitdeploy'); ?></th>
-                <th><?php _e('Actions', 'mrs-gitdeploy'); ?></th>
-            </tr>
-        </thead>
+            <thead>
+                <tr>
+                    <th><?php esc_html_e('Deployment Time', 'gitdeploy'); ?></th>
+                    <th><?php esc_html_e('Type', 'gitdeploy'); ?></th>
+                    <th><?php esc_html_e('Status', 'gitdeploy'); ?></th>
+                    <th><?php esc_html_e('Actions', 'gitdeploy'); ?></th>
+                </tr>
+            </thead>
+        </table>
     <?php }
 
     foreach ($grouped_deployments as $date => $deployments): ?>
@@ -138,10 +141,10 @@ foreach ($deployments as $deployment) {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th><?php _e('Deployment Time', 'mrs-gitdeploy'); ?></th>
-                    <th><?php _e('Type', 'mrs-gitdeploy'); ?></th>
-                    <th><?php _e('Status', 'mrs-gitdeploy'); ?></th>
-                    <th><?php _e('Actions', 'mrs-gitdeploy'); ?></th>
+                    <th><?php esc_html_e('Deployment Time', 'gitdeploy'); ?></th>
+                    <th><?php esc_html_e('Type', 'gitdeploy'); ?></th>
+                    <th><?php esc_html_e('Status', 'gitdeploy'); ?></th>
+                    <th><?php esc_html_e('Actions', 'gitdeploy'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -154,7 +157,7 @@ foreach ($deployments as $deployment) {
                         </td>
                         <td>
                             <a href="#" class="button button-secondary mrs-gitdeploy-view-details" data-id="<?php echo esc_attr($deployment->id); ?>">
-                                <?php _e('View Details', 'mrs-gitdeploy'); ?>
+                                <?php esc_html_e('View Details', 'gitdeploy'); ?>
                             </a>
                         </td>
                     </tr>
@@ -170,8 +173,8 @@ foreach ($deployments as $deployment) {
             'format' => '?paged=%#%',
             'total' => $total_pages,
             'current' => max(1, $paged),
-            'prev_text' => __('« Previous', 'mrs-gitdeploy'),
-            'next_text' => __('Next »', 'mrs-gitdeploy'),
+            'prev_text' => __('« Previous', 'gitdeploy'),
+            'next_text' => __('Next »', 'gitdeploy'),
             'type' => 'list',
         ]);
         ?>
@@ -182,7 +185,7 @@ foreach ($deployments as $deployment) {
 <div id="mrs-gitdeploy-details-modal" class="mrs-gitdeploy-modal">
     <div class="mrs-gitdeploy-modal-content">
         <span class="mrs-gitdeploy-close">&times;</span>
-        <h2><?php _e('Deployment Details', 'mrs-gitdeploy'); ?></h2>
+        <h2><?php esc_html_e('Deployment Details', 'gitdeploy'); ?></h2>
         <div id="mrs-gitdeploy-details-content" class="mrs-gitdeploy-details-scroll"></div>
     </div>
 </div>

@@ -1,11 +1,12 @@
 <?php
 /*
-Plugin Name: GitDeploy
-Plugin URI: http://github.com/rajinsharwar/mrs-gitdeploy/
-Description: Git-versioning plugin for WordPress
-Version: 1.0
+Plugin Name: GitDeploy - Deploy from GitHub
+Plugin URI: https://github.com/rajinsharwar/gitdeploy/
+Description: Easily deploy your website code from your GitHub repositiory directly to your WordPress environment.
+Version: 1.0.0
 Author: Rajin Sharwar
-Author URI: https://linkedin.com/in/rajinsharwar
+Author URI: https://www.linkedin.com/in/rajinsharwar/
+Text Domain: gitdeploy
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 */
@@ -31,6 +32,9 @@ define( 'MRS_GITDEPLOY_RESYNC_URL', wp_normalize_path( wp_upload_dir()[ 'baseurl
 // Outputs as Path: eg: www/public_html/wp-content/uploads/
 define( 'MRS_GITDEPLOY_PULL_DIR', wp_normalize_path( wp_upload_dir()[ 'basedir' ] ) . '/mrs-gitdeploy-pull/' );
 
+// Returns plugin version.
+$plugin_version = get_file_data( (__FILE__), array('Version' => 'Version'))['Version'];
+define( 'MRS_GITDEPLOY_CURRENT_VERSION', $plugin_version );
 
 /** Composer autoload */
 if ( ! class_exists( 'WP_Async_Request' ) ) {
