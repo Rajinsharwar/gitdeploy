@@ -99,6 +99,7 @@ foreach ($deployments as $deployment) {
             <div style="display: flex; align-items: center;">
                 <div style="flex-grow: 1; font-size: 1rem; font-weight: bold;">
                     <?php echo esc_html__('Updating GitHub Repository', 'gitdeploy'); ?>
+                    &nbsp;<span class="dashicons dashicons-image-rotate mrs-gitdeploy-icon" style="font-family: dashicons; animation: spin 2s linear infinite; margin-right: 4px;"></span>
                 </div>
                 <form method="post" action="" style="margin: 0;">
                     <?php wp_nonce_field('mrs_gitdeploy_cancel_resync_nonce', 'mrs_gitdeploy_nonce_field'); ?>
