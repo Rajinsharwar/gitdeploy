@@ -19,8 +19,8 @@ if ( isset( $_POST['mrs_gitdeploy_resync_all_files_submit'] ) ) {
         // Calling the PHP function to resync
         $response = mrs_gitdeploy_resync_all_files_from_github_repo();
 
-        if ( ! $response ) {
-            echo '<div class="error"><p>' . esc_html__('A deployment is already in progress!', 'gitdeploy' ) . '</p></div>';
+        if ( true !== $response ) {
+            echo '<div class="error"><p>' . $response . '</p></div>';
         } else {
             echo '<div class="updated"><p>' . esc_html__( 'Deployment process Started!', 'gitdeploy' ) . '</p></div>';
         }

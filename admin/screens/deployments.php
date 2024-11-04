@@ -92,22 +92,34 @@ foreach ($deployments as $deployment) {
 
 ?>
 <div class="wrap">
-    <h1><?php esc_html_e('Deployment Logs', 'gitdeploy'); ?></h1> <?php
-    $resync_in_progress = ( 'yes' === get_option( 'mrs_gitdeploy_resync_in_progress' ) ); ?>
+    <?php
+    $resync_in_progress = ( 'yes' === get_option( 'mrs_gitdeploy_resync_in_progress' ) );
+    if ( $resync_in_progress ) { ?>
+        <div style="display: flex; flex-direction: column; padding: 1rem; background-color: #ffeb3b; color: #333; border: 1px solid black; border-radius: 5px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center;">
+                <div style="flex-grow: 1; font-size: 1rem; font-weight: bold;">
+                    <?php echo esc_html__('Updating GitHub Repository', 'gitdeploy'); ?>
+                </div>
+                <form method="post" action="" style="margin: 0;">
+                    <?php wp_nonce_field('mrs_gitdeploy_cancel_resync_nonce', 'mrs_gitdeploy_nonce_field'); ?>
+                    <input type="hidden" name="action" value="cancel_resync">
+                    <button type="submit" class="button button-secondary" style="margin-left: 20px; background-color: #333; color: #fff; padding: 10px 20px; border-radius: 5px;">
+                        <b><?php esc_html_e('Cancel ReSync', 'gitdeploy'); ?></b>
+                    </button>
+                </form>
+            </div>
+            <div style="font-size: 1rem; font-weight: normal; margin-top: 10px;">
+                <?php echo esc_html( mrs_gitdeploy_get_resync_status() ); ?>
+            </div>
+            <div style="font-size: 0.9rem; font-style: italic; color: #666; margin-top: 10px;">
+                (<?php echo esc_html__('Refresh to see updated status', 'gitdeploy'); ?>)
+            </div>
+        </div>
+    <?php } ?>
+    
+    <h1><?php esc_html_e('Deployment Logs', 'gitdeploy'); ?></h1>
 
     <div style="display: flex;">
-        <?php if ( $resync_in_progress ) { ?>
-            <form method="post" action="">
-                <?php wp_nonce_field('mrs_gitdeploy_cancel_resync_nonce', 'mrs_gitdeploy_nonce_field'); ?>
-                <input type="hidden" name="action" value="cancel_resync">
-                <button type="submit" class="button button-secondary" style="margin-right: 20px; background-color: yellow; color: black;">
-                    <b>
-                        <?php esc_html_e('Cancel ReSync', 'gitdeploy'); ?>
-                    </b>
-                </button>
-            </form>
-        <?php } ?>
-        
         <?php if ( ! empty( $grouped_deployments ) ) { ?>
             <form method="post" action="">
                 <?php wp_nonce_field('mrs_gitdeploy_clear_logs_nonce', 'mrs_gitdeploy_nonce_field'); ?>

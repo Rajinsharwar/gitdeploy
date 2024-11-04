@@ -383,6 +383,9 @@ function mrs_gitdeploy_resync_action() {
         ));
     }
 
+    update_option( 'mrs_gitdeploy_resync_in_progress', 'yes', false );
+    update_option( 'mrs_gitdeploy_resync_status', 'one' );
+
     $items_to_include = mrs_gitdeploy_allowed_items();
 
     $zip = new ZipArchive();
@@ -453,6 +456,9 @@ function mrs_gitdeploy_resync_action() {
             )
         ));        
     } else {
+        delete_option( 'mrs_gitdeploy_resync_in_progress' );
+        delete_option( 'mrs_gitdeploy_resync_status' );
+        
         $deployments_url = esc_url( admin_url( 'admin.php?page=mrs_gitdeploy_deployments' ) );
 
         $message = sprintf(
@@ -668,7 +674,12 @@ function mrs_gitdeploy_resync_all_files_from_github_repo() {
 
     // We are stopping any major deployment when a deployment is running.
     if ( 'yes' === get_option( 'mrs_gitdeploy_deployment_in_progress' ) ) {
-        return false;
+        return esc_html__('A deployment is already in progress!', 'gitdeploy' );
+    }
+
+    // We are stopping any deployment when a resync is running.
+    if ( 'yes' === get_option( 'mrs_gitdeploy_resync_in_progress' ) ) {
+        return esc_html__('A ReSync is in progress! Kindly wait for it to complete.', 'gitdeploy' );
     }
 
     update_option( 'mrs_gitdeploy_deployment_in_progress', 'yes' );
@@ -721,4 +732,26 @@ function mrs_gitdeploy_hide_notices_admin(){
 
         add_action( 'admin_notices', 'mrs_gitdeploy_setup_complete_now_resync' );
     }
+}
+
+function mrs_gitdeploy_get_resync_status() {
+    $status_code = get_option( 'mrs_gitdeploy_resync_status' );
+
+    $message = '';
+
+    switch( $status_code ) {
+        case 'one':
+            $message = __( 'Creating ZIP for ReSync.', 'gitdeploy' );
+            break;
+        case 'twp':
+            $message = __( 'Sending request to GitHub for ReSync.', 'gitdeploy' );
+            break;
+        case 'three':
+            $message = __( 'Request sent, waiting for reply-back from GitHub Actions.', 'gitdeploy' );
+            break;
+        default:
+            $message = __( 'Status Unknown. Please cancel the ReSync if this message persists.', 'gitdeploy' );
+    }
+
+    return $message;
 }

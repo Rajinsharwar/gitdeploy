@@ -51,6 +51,7 @@ function mrs_gitdeploy_handle_push_completed(WP_REST_Request $request) {
     }
 
     delete_option( 'mrs_gitdeploy_resync_in_progress' );
+    delete_option( 'mrs_gitdeploy_resync_status' );
 
     if ( 'success' === $status_from_gh ) {
         $status = 'Success';

@@ -30,6 +30,7 @@ class MRS_GitDeploy_Resync {
     }
 
     public function sync() {
+        update_option( 'mrs_gitdeploy_resync_status', 'two' );
 
         // pass true or false as string
         $is_basic_auth = ( 1 == get_option( 'mrs_gitdeploy_basic_auth_enabled' ) ) ? 'true' : 'false';
@@ -71,20 +72,10 @@ class MRS_GitDeploy_Resync {
             $human_readable_time = 'N/A';
         }
 
-        // check for api error.
-        if ( $response_code === 403 ) {
-            $this->status = 'Failed';
-            $deployment_log = new MRS_GitDeploy_Deployments(
-                $this->status, 
-                __( 'WP -> GitHub', 'gitdeploy' ), 
-                __( 'Wrong API credentials given.', 'gitdeploy' )
-            );
-            wp_delete_file( $this->zip_file );
-            return false;
-        }
-
         // check for api rate limit.
         if ( $response_code === 403 ) {
+            delete_option( 'mrs_gitdeploy_resync_in_progress' );
+            delete_option( 'mrs_gitdeploy_resync_status' );
             if ( isset( $response_data['message'] ) && strpos( $response_data['message'], 'API rate limit exceeded') !== false ) {
                 $this->status = 'Failed';
                 $deployment_log = new MRS_GitDeploy_Deployments(
@@ -99,11 +90,23 @@ class MRS_GitDeploy_Resync {
                 );
                 wp_delete_file( $this->zip_file );
                 return false;
+            } else {
+                $this->status = 'Failed';
+                $deployment_log = new MRS_GitDeploy_Deployments(
+                    $this->status, 
+                    __( 'WP -> GitHub', 'gitdeploy' ), 
+                    __( 'Wrong API credentials given.', 'gitdeploy' )
+                );
+                wp_delete_file( $this->zip_file );
+                return false;
             }
         }
 
-        // check for api rate limit.
+        // check for no repo found.
         if ( $response_code === 404 ) {
+            delete_option( 'mrs_gitdeploy_resync_in_progress' );
+            delete_option( 'mrs_gitdeploy_resync_status' );
+
             $this->status = 'Failed';
             $deployment_log = new MRS_GitDeploy_Deployments(
                 $this->status, 
@@ -115,6 +118,9 @@ class MRS_GitDeploy_Resync {
         }
 
         if ( is_wp_error( $response ) ) {
+            delete_option( 'mrs_gitdeploy_resync_in_progress' );
+            delete_option( 'mrs_gitdeploy_resync_status' );
+
             $this->status = 'Failed';
             $error_string = $response->get_error_message();
             $deployment_log = new MRS_GitDeploy_Deployments( $this->status, 
@@ -132,9 +138,12 @@ class MRS_GitDeploy_Resync {
         }
         
         if ( 204 === $response_code ) {
-            update_option( 'mrs_gitdeploy_resync_in_progress', 'yes', false );
+            update_option( 'mrs_gitdeploy_resync_status', 'three' );
             return true;
         } else {
+            delete_option( 'mrs_gitdeploy_resync_in_progress' );
+            delete_option( 'mrs_gitdeploy_resync_status' );
+
             $this->status = 'Failed';
             $error_string = wp_remote_retrieve_body( $response );
             $deployment_log = new MRS_GitDeploy_Deployments( $this->status, 
