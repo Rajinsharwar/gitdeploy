@@ -17,9 +17,13 @@ if ( isset( $_POST['mrs_gitdeploy_resync_all_files_submit'] ) ) {
         echo '<div class="error"><p>' . esc_html__('A Resync is already in progress. Check the Deployments tab!', 'gitdeploy') . '</p></div>';
     } else {
         // Calling the PHP function to resync
-        mrs_gitdeploy_resync_all_files_from_github_repo();
+        $response = mrs_gitdeploy_resync_all_files_from_github_repo();
 
-        echo '<div class="updated"><p>' . esc_html__('ReSync Started!', 'gitdeploy') . '</p></div>';
+        if ( ! $response ) {
+            echo '<div class="error"><p>' . esc_html__('A deployment is already in progress!', 'gitdeploy' ) . '</p></div>';
+        } else {
+            echo '<div class="updated"><p>' . esc_html__( 'Deployment process Started!', 'gitdeploy' ) . '</p></div>';
+        }
     }
 }
 

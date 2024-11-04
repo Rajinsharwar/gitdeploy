@@ -663,9 +663,15 @@ function mrs_gitdeploy_process_workflow_file() {
     return true;
 }
 
-// Your PHP function that handles the resync
+// Function that handles the resync all
 function mrs_gitdeploy_resync_all_files_from_github_repo() {
-    update_option( 'mrs_gitdeploy_resync_in_progress', 'yes' );
+
+    // We are stopping any major deployment when a deployment is running.
+    if ( 'yes' === get_option( 'mrs_gitdeploy_deployment_in_progress' ) ) {
+        return false;
+    }
+
+    update_option( 'mrs_gitdeploy_deployment_in_progress', 'yes' );
     $payload = [
         'commits' => [
             [
@@ -674,6 +680,8 @@ function mrs_gitdeploy_resync_all_files_from_github_repo() {
         ]
     ];
     $process = new MRS_GitDeploy_Pull_from_GitHub( $payload );
+
+    return true;
 }
 
 /**
